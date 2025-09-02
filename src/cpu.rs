@@ -11,14 +11,12 @@ pub struct CPU {
     sp: u16, // Stack Pointer
     pc: u16, // Program Counter
     // Flags:
-    S: bool,   // Sign
-    Z: bool,   // Zero
-    AC: bool,  // Auxiliary Carry
-    P: bool,   // Parity
-    CY: bool,  // Carry
+    s: bool,  // Sign
+    z: bool,  // Zero
+    ac: bool, // Auxiliary Carry
+    p: bool,  // Parity
+    cy: bool, // Carry
 }
 
 #[allow(dead_code, unused_variables)]
-impl CPU {
-
-}
+impl CPU {}
