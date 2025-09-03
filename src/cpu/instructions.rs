@@ -2,7 +2,35 @@ use super::CPU;
 
 impl CPU {
     pub(super) fn mov(&mut self, inst: u8) {
-        let source = self.get_byte(inst & 0x07);
-        self.set_byte((inst >> 3) & 0x07, source);
+        let s = inst & 0x07;
+        let d = (inst >> 3) & 0x07;
+        let value = self.get_reg(s);
+        self.set_reg(d, value);
+    }
+
+    // Supposed to be in, but its a keyword :(
+    pub(super) fn inc(&mut self, inst: u8) {
+        let d = (inst >> 3) & 0x07;
+        let value = self.get_reg(d);
+        self.set_reg(d, value + 1);
+    }
+
+    // Following inc/dec pattern because of in keyword conflict
+    pub(super) fn dec(&mut self, inst: u8) {
+        let d = (inst >> 3) & 0x07;
+        let value = self.get_reg(d);
+        self.set_reg(d, value - 1);
+    }
+
+    pub(super) fn inx(&mut self, inst: u8) {
+        let d = (inst >> 4) & 0x03;
+        let value = self.get_reg_pair(d);
+        self.set_reg_pair(d, value + 1);
+    }
+
+    pub(super) fn dcx(&mut self, inst: u8) {
+        let d = (inst >> 4) & 0x03;
+        let value = self.get_reg_pair(d);
+        self.set_reg_pair(d, value - 1);
     }
 }

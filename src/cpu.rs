@@ -34,7 +34,7 @@ pub struct CPU {
 
 #[allow(dead_code, unused_variables)]
 impl CPU {
-    fn get_byte(&self, target: u8) -> u8 {
+    fn get_reg(&self, target: u8) -> u8 {
         match target {
             0 => self.b,
             1 => self.c,
@@ -48,7 +48,7 @@ impl CPU {
         }
     }
 
-    fn set_byte(&mut self, target: u8, value: u8) {
+    fn set_reg(&mut self, target: u8, value: u8) {
         match target {
             0 => self.b = value,
             1 => self.c = value,
@@ -60,6 +60,46 @@ impl CPU {
             7 => self.a = value,
             _ => panic!("Unknown target"),
         }
+    }
+
+    fn set_reg_pair(&mut self, target: u8, value: u16) {
+        let l = (value >> 8) as u8;
+        let r = value as u8;
+        match target {
+            0 => {
+                self.b = l;
+                self.c = r;
+            },
+            1 => {
+                self.d = l;
+                self.e = r;
+            },
+            2 => {
+                self.h = l;
+                self.l = r;
+            },
+            _ => panic!("Unknown target"),
+        }
+    }
+
+    fn get_reg_pair(&mut self, target: u8) -> u16 {
+        let mut value : u16;
+        match target {
+            0 => {
+                value = (self.b as u16) << 8;
+                value |= self.c as u16;
+            },
+            1 => {
+                value = (self.d as u16) << 8;
+                value |= self.e as u16;
+            },
+            2 => {
+                value = (self.h as u16) << 8;
+                value |= self.l as u16;
+            },
+            _ => panic!("Unknown target"),
+        }
+        value
     }
 
     pub fn execute(&mut self, inst: u8) /*-> u32 <- why? */
@@ -89,10 +129,10 @@ impl CPU {
             0xC7 | 0xCF | 0xD7 | 0xDF | 0xE7 | 0xEF | 0xf7 | 0xFF => todo!("RSTs"),
             0xDB => todo!("IN"),
             0xD3 => todo!("OUT"),
-            0x04 | 0x0C | 0x14 | 0x1C | 0x24 | 0x2C | 0x34 | 0x3C => todo!("Increments"),
-            0x05 | 0x0D | 0x15 | 0x1D | 0x25 | 0x2D | 0x35 | 0x3D => todo!("Decrements"),
-            0x03 | 0x13 | 0x23 => todo!("Increment pairs"),
-            0x0B | 0x1B | 0x2B => todo!("Increment pairs"),
+            0x04 | 0x0C | 0x14 | 0x1C | 0x24 | 0x2C | 0x34 | 0x3C => self.inc(inst),
+            0x05 | 0x0D | 0x15 | 0x1D | 0x25 | 0x2D | 0x35 | 0x3D => self.dec(inst),
+            0x03 | 0x13 | 0x23 => self.inx(inst),
+            0x0B | 0x1B | 0x2B => self.dcx(inst),
             0x80..=0x8F => todo!("ADDs"), // Conferir datasheet com prof -> ADD M
             0xC6 => todo!("ADI sem carry"),
             0xCE => todo!("ACI (ADI com carry)"),
