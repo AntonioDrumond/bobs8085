@@ -1,6 +1,15 @@
+mod instructions;
+
 #[allow(dead_code)]
-enum Register {
-    A, B, C, D, E, H, L, M,
+enum Target {
+    A,
+    B,
+    C,
+    D,
+    E,
+    H,
+    L,
+    MEM,
 }
 
 #[derive(Default, Debug)]
@@ -25,54 +34,39 @@ pub struct CPU {
 
 #[allow(dead_code, unused_variables)]
 impl CPU {
-
-    fn get_reg(&self, reg: Register) -> u8 {
-        match reg {
-            Register::A => self.a,
-            Register::B => self.b,
-            Register::C => self.c,
-            Register::D => self.d,
-            Register::E => self.e,
-            Register::H => self.h,
-            Register::L => self.l,
-            Register::M => todo!("Memory access"),
-            // _ => unreachable!("No register found"),
+    fn get_byte(&self, target: u8) -> u8 {
+        match target {
+            0 => self.b,
+            1 => self.c,
+            2 => self.d,
+            3 => self.e,
+            4 => self.h,
+            5 => self.l,
+            6 => todo!("Memory access"),
+            7 => self.a,
+            _ => panic!("Unknown target"),
         }
     }
 
-    fn set_reg(&mut self, reg: Register, value: u8) {
-        match reg {
-            Register::A => self.a = value,
-            Register::B => self.b = value,
-            Register::C => self.c = value,
-            Register::D => self.d = value,
-            Register::E => self.e = value,
-            Register::H => self.h = value,
-            Register::L => self.l = value,
-            Register::M => todo!("Memory access"),
-            // _ => unreachable!("No register found"),
+    fn set_byte(&mut self, target: u8, value: u8) {
+        match target {
+            0 => self.b = value,
+            1 => self.c = value,
+            2 => self.d = value,
+            3 => self.e = value,
+            4 => self.h = value,
+            5 => self.l = value,
+            6 => todo!("Memory access"),
+            7 => self.a = value,
+            _ => panic!("Unknown target"),
         }
     }
 
-    fn reg_from_bits(bits: u8) -> Register {
-        let tail = bits & 0x07;
-        match tail {
-            0b111 => Register::A,
-            0b000 => Register::B,
-            0b001 => Register::C,
-            0b010 => Register::D,
-            0b011 => Register::E,
-            0b100 => Register::H,
-            0b101 => Register::L,
-            0b110 => Register::M,
-            _ => unreachable!("No possible register"),
-        }
-    }
-
-    pub fn execute(&mut self, inst: u8) -> u32 {
+    pub fn execute(&mut self, inst: u8) /*-> u32 <- why? */
+    {
         match inst {
             0x76 => todo!("HLT"),
-            0x40..=0x7F => todo!("MOVs"),
+            0x40..=0x7F => self.mov(inst),
             0x06 | 0x0E | 0x16 | 0x1E | 0x26 | 0x2E | 0x36 | 0x3E => todo!("MVIs"),
             0x01 | 0x11 | 0x21 => todo!("LXIs"),
             0x02 | 0x12 => todo!("STAXs"),
@@ -126,16 +120,5 @@ impl CPU {
             0x30 => todo!("SIM"),
             _ => todo!("Instrução não identificada :c"),
         }
-
     }
-
-    pub fn mov(&mut self, inst: u8) {
-        let source = inst & 0x07;
-        let dest = (inst >> 3) & 0x07;
-        self.set_reg(
-            CPU::reg_from_bits(dest),
-            self.get_reg( CPU::reg_from_bits(source) )
-        );
-    }
-
 }
