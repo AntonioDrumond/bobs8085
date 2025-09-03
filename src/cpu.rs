@@ -1,4 +1,9 @@
-#[derive(Debug)]
+#[allow(dead_code)]
+enum Register {
+    A, B, C, D, E, H, L, M,
+}
+
+#[derive(Default, Debug)]
 #[allow(dead_code, unused_variables)]
 pub struct CPU {
     a: u8, // Accumulator
@@ -21,7 +26,50 @@ pub struct CPU {
 #[allow(dead_code, unused_variables)]
 impl CPU {
 
-    pub fn execute(inst: u8) -> u32 {
+    fn get_reg(&self, reg: Register) -> u8 {
+        match reg {
+            Register::A => self.a,
+            Register::B => self.b,
+            Register::C => self.c,
+            Register::D => self.d,
+            Register::E => self.e,
+            Register::H => self.h,
+            Register::L => self.l,
+            Register::M => todo!("Memory access"),
+            // _ => unreachable!("No register found"),
+        }
+    }
+
+    fn set_reg(&mut self, reg: Register, value: u8) {
+        match reg {
+            Register::A => self.a = value,
+            Register::B => self.b = value,
+            Register::C => self.c = value,
+            Register::D => self.d = value,
+            Register::E => self.e = value,
+            Register::H => self.h = value,
+            Register::L => self.l = value,
+            Register::M => todo!("Memory access"),
+            // _ => unreachable!("No register found"),
+        }
+    }
+
+    fn reg_from_bits(bits: u8) -> Register {
+        let tail = bits & 0x07;
+        match tail {
+            0b111 => Register::A,
+            0b000 => Register::B,
+            0b001 => Register::C,
+            0b010 => Register::D,
+            0b011 => Register::E,
+            0b100 => Register::H,
+            0b101 => Register::L,
+            0b110 => Register::M,
+            _ => unreachable!("No possible register"),
+        }
+    }
+
+    pub fn execute(&mut self, inst: u8) -> u32 {
         match inst {
             0x76 => todo!("HLT"),
             0x40..=0x7F => todo!("MOVs"),
@@ -78,6 +126,16 @@ impl CPU {
             0x30 => todo!("SIM"),
             _ => todo!("Instrução não identificada :c"),
         }
+
+    }
+
+    pub fn mov(&mut self, inst: u8) {
+        let source = inst & 0x07;
+        let dest = (inst >> 3) & 0x07;
+        self.set_reg(
+            CPU::reg_from_bits(dest),
+            self.get_reg( CPU::reg_from_bits(source) )
+        );
     }
 
 }
