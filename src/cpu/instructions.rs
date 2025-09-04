@@ -8,15 +8,13 @@ impl CPU {
         self.set_reg(d, value);
     }
 
-    // Supposed to be in, but its a keyword :(
-    pub(super) fn inc(&mut self, inst: u8) {
+    pub(super) fn inr(&mut self, inst: u8) {
         let d = (inst >> 3) & 0x07;
         let value = self.get_reg(d);
         self.set_reg(d, value + 1);
     }
 
-    // Following inc/dec pattern because of in keyword conflict
-    pub(super) fn dec(&mut self, inst: u8) {
+    pub(super) fn dcr(&mut self, inst: u8) {
         let d = (inst >> 3) & 0x07;
         let value = self.get_reg(d);
         self.set_reg(d, value - 1);
