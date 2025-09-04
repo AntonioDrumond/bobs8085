@@ -1,11 +1,17 @@
-# bobs8085
-- This repository's goal is to build an accurate Intel 8085 simulator, with a Shell as it's interface.
+# BOBS
+The 8085 emulator nobody asked, but everyone needed.
 
-### File Organization and todo-list:
-- [x] **memory.rs** -> The processor's primary memory
-- [ ] **cpu.rs** -> 
-- [ ] **instructions.rs** -> 
-- [ ] **bus.rs** -> 
-- [ ] **io.rs** -> 
-- [ ] **lib.rs** -> 
-- [ ] **main.rs** -> 
+This repository's goal is to build an accurate Intel 8085 simulator, with a Shell as it's interface.
+
+---
+
+### File Organization:
+├─ src/
+|  ├─ cpu/
+|  |  └── instructions.rs
+|  ├─ bus.rs
+|  ├─ cpu.rs
+|  ├─ io.rs
+|  ├─ lib.rs
+|  ├─ main.rs
+|  └─ mem.rs
