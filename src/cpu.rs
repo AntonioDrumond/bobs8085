@@ -11,7 +11,7 @@ enum Target {
     E,
     H,
     L,
-    MEM,
+    M,
 }
 
 #[derive(Default, Debug)]
@@ -37,6 +37,19 @@ pub struct CPU {
 
 #[allow(dead_code, unused_variables)]
 impl CPU {
+
+    pub fn print_state(&self) {
+        println!("📥A  => {:02X} - {:08b}    |    🚩S  => {}", self.a, self.a, self.s);
+        println!("📥B  => {:02X} - {:08b}    |    🚩Z  => {}", self.b, self.b, self.z);
+        println!("📥C  => {:02X} - {:08b}    |    🚩AC => {}", self.c, self.c, self.ac);
+        println!("📥D  => {:02X} - {:08b}    |    🚩P  => {}", self.d, self.d, self.p);
+        println!("📥E  => {:02X} - {:08b}    |    🚩CY => {}", self.e, self.e, self.cy);
+        println!("📥H  => {:02X} - {:08b}", self.h, self.h);
+        println!("📥L  => {:02X} - {:08b}", self.l, self.l);
+        println!("📥SP => {:02X} - {:08b}", self.sp, self.sp);
+        println!("📥PC => {:02X} - {:08b}", self.pc, self.pc);
+    }
+
     fn get_reg(&self, target: u8) -> u8 {
         match target {
             0 => self.b,
@@ -51,7 +64,7 @@ impl CPU {
         }
     }
 
-    fn set_reg(&mut self, target: u8, value: u8) {
+    pub fn set_reg(&mut self, target: u8, value: u8) {
         match target {
             0 => self.b = value,
             1 => self.c = value,
@@ -157,7 +170,7 @@ impl CPU {
             0xEE => todo!("XRI"),
             0xF6 => todo!("ORI"),
             0xFE => todo!("CPI"),
-            0x07 | 0x0F | 0x17 | 0x1F => todo!("Rotates"),
+            0x07 | 0x0F | 0x17 | 0x1F => self.rotate(inst),
             0x2F => todo!("CMA"),
             0x37 => todo!("STC"),
             0x3F => todo!("CMC"),
