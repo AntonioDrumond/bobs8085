@@ -49,6 +49,14 @@ impl CPU {
         println!("📥PC => {:02X} - {:08b}", self.pc, self.pc);
     }
 
+    fn fetch8(&self, bus: &Bus) -> u8 {
+        bus.mem_get8(self.pc + 1)
+    }
+
+    fn fetch16(&self, bus: &Bus) -> u16 {
+        bus.mem_get16(self.pc + 1)
+    }
+
     fn get_reg(&self, target: u8) -> u8 {
         match target {
             0 => self.b,
