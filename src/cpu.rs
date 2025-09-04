@@ -78,6 +78,9 @@ impl CPU {
                 self.h = l;
                 self.l = r;
             }
+            // Just for specific cenarios I guess
+            // Probably unsafe to be here
+            3 => self.sp = value,
             _ => panic!("Unknown target"),
         }
     }
@@ -96,6 +99,9 @@ impl CPU {
             2 => {
                 value = (self.h as u16) << 8;
                 value |= self.l as u16;
+            }
+            3 => {
+                value = self.sp;
             }
             _ => panic!("Unknown target"),
         }
