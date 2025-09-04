@@ -6,6 +6,7 @@ This repository's goal is to build an accurate Intel 8085 simulator, with a Shel
 ---
 
 ### File Organization:
+```
 ├─ src/
 |  ├─ cpu/
 |  |  └── instructions.rs
@@ -15,3 +16,4 @@ This repository's goal is to build an accurate Intel 8085 simulator, with a Shel
 |  ├─ lib.rs
 |  ├─ main.rs
 |  └─ mem.rs
+```
