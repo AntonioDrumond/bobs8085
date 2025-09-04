@@ -31,4 +31,41 @@ impl CPU {
         let value = self.get_reg_pair(d);
         self.set_reg_pair(d, value - 1);
     }
+
+    pub(super) fn rotate(&mut self, inst: u8) {
+        let which = inst >> 3;
+        match which {
+            0 => { // RLC
+                let carry = self.a & 0x80 == 0x80;
+                self.a <<= 1;
+                if carry {
+                    self.cy = true;
+                    self.a |= 0x01;
+                }
+            },
+            1 => { // RRC
+                let carry = self.a & 0x01 == 0x01;
+                self.a >>= 1;
+                if carry {
+                    self.cy = true;
+                    self.a |= 0x80;
+                }
+            },
+            2 => { // RAL
+                let cyout = self.cy;
+                let cyin  = self.a & 0x80 == 0x80;
+                self.a <<= 1;
+                if cyout { self.a |= 0x01; }
+                self.cy = cyin;
+            },
+            3 => { // RAR
+                let cyout = self.cy;
+                let cyin  = self.a & 0x01 == 0x01;
+                self.a >>= 1;
+                if cyout { self.a |= 0x80; }
+                self.cy = cyin;
+            },
+            _ => panic!("Instrução não encontrada: {inst:X} / {inst:b}"),
+        }
+    }
 }
