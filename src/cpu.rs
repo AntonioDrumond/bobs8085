@@ -1,6 +1,6 @@
 mod instructions;
 
-use crate::mem::Memory;
+use crate::bus::Bus;
 
 #[allow(dead_code)]
 enum Target {
@@ -32,7 +32,6 @@ pub struct CPU {
     ac: bool, // Auxiliary Carry
     p: bool,  // Parity
     cy: bool, // Carry
-    mem: Memory,
 }
 
 #[allow(dead_code, unused_variables)]
@@ -143,7 +142,7 @@ impl CPU {
         }
     }
 
-    pub fn execute(&mut self, inst: u8) /*-> u32 <- why? */
+    pub fn execute(&mut self, inst: u8, bus: &mut Bus) /*-> u32 <- why? */
     {
         match inst {
             0x76 => todo!("HLT"),

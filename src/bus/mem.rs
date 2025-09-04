@@ -1,12 +1,18 @@
 #[allow(dead_code, unused_variables)]
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Memory { 
     arr: Vec<u8>,
 }
 
+impl Default for Memory {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[allow(dead_code, unused_variables)]
 impl Memory {
-    pub fn default() -> Memory {
+    pub fn new() -> Memory {
         Memory { arr: vec![0; 0xFFFF+2] }
     }
 
