@@ -1,14 +1,5 @@
 use super::CPU;
 
-const B   : u8 = 0;
-const C   : u8 = 1;
-const D   : u8 = 2;
-const E   : u8 = 3;
-const H   : u8 = 4;
-const L   : u8 = 5;
-const MEM : u8 = 6;
-const A   : u8 = 7;
-
 impl CPU {
     pub(super) fn mov(&mut self, inst: u8) {
         let s = inst & 0x07;
@@ -44,19 +35,39 @@ impl CPU {
     pub(super) fn add(&mut self, inst: u8) {
         let s = inst & 0x07;
         let value = self.get_reg(s);
-        let a_value = self.get_reg(A);
-        self.set_reg(A, a_value + value);
+        let prev_a = self.a;
+        self.a = prev_a + value;
+        self.update_s(self.a);
+        self.update_z(self.a);
+        self.update_p(self.a);
+        self.cy = self.a < prev_a;
     }
 
     pub(super) fn adc(&mut self, inst: u8) {
+        let s = inst & 0x07;
+        let value = self.get_reg(s);
+        let prev_a = self.a;
+        self.a = prev_a + value + self.cy as u8;
+        self.update_s(self.a);
+        self.update_z(self.a);
+        self.update_p(self.a);
+        self.cy = self.a < prev_a;
     }
 
     pub(super) fn adi(&mut self, inst: u8) {
+        todo!("Memory");
     }
 
     pub(super) fn aci(&mut self, inst: u8) {
+        todo!("Memory");
     }
 
     pub(super) fn dad(&mut self, inst: u8) {
+        let s = (inst >> 4) & 0x03;
+        let value = self.get_reg_pair(s);
+        let prev_hl = self.get_reg_pair(2);
+        self.set_reg_pair(2, prev_hl + value);
+        let cur_hl = self.get_reg_pair(2);
+        self.cy = cur_hl < prev_hl;
     }
 }
