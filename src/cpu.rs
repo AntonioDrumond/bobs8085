@@ -124,6 +124,25 @@ impl CPU {
         value
     }
 
+    fn update_s(&mut self, value: u8) {
+        self.s = value > 0x7F;
+    }
+
+    fn update_z(&mut self, value: u8) {
+        self.z = value == 0;
+    }
+
+    fn update_p(&mut self, value: u8) {
+        self.p = true;
+        let mut i: u16 = 1;
+        while i < 0x100 {
+            if value & i as u8 > 0 {
+                self.p = !self.p;
+            }
+            i <<= 1;
+        }
+    }
+
     pub fn execute(&mut self, inst: u8) /*-> u32 <- why? */
     {
         match inst {
@@ -155,10 +174,11 @@ impl CPU {
             0x05 | 0x0D | 0x15 | 0x1D | 0x25 | 0x2D | 0x35 | 0x3D => self.dcr(inst),
             0x03 | 0x13 | 0x23 => self.inx(inst),
             0x0B | 0x1B | 0x2B => self.dcx(inst),
-            0x80..=0x8F => todo!("ADDs"), // Conferir datasheet com prof -> ADD M
+            0x80..=0x87 => self.add(inst), // Conferir datasheet com prof -> ADD M
+            0x88..=0x8F => self.adc(inst),
             0xC6 => todo!("ADI sem carry"),
             0xCE => todo!("ACI (ADI com carry)"),
-            0x09 | 0x19 | 0x29 | 0x39 => todo!("DADs"),
+            0x09 | 0x19 | 0x29 | 0x39 => self.dad(inst),
             0x90..=0x9F => todo!("SUBs"),
             0xD6 => todo!("SUI"),
             0xDE => todo!("SBI"),

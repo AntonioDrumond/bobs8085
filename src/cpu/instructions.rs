@@ -67,5 +67,43 @@ impl CPU {
             },
             _ => panic!("Instrução não encontrada: {inst:X} / {inst:b}"),
         }
+
+    pub(super) fn add(&mut self, inst: u8) {
+        let s = inst & 0x07;
+        let value = self.get_reg(s);
+        let prev_a = self.a;
+        self.a = prev_a + value;
+        self.update_s(self.a);
+        self.update_z(self.a);
+        self.update_p(self.a);
+        self.cy = self.a < prev_a;
+    }
+
+    pub(super) fn adc(&mut self, inst: u8) {
+        let s = inst & 0x07;
+        let value = self.get_reg(s);
+        let prev_a = self.a;
+        self.a = prev_a + value + self.cy as u8;
+        self.update_s(self.a);
+        self.update_z(self.a);
+        self.update_p(self.a);
+        self.cy = self.a < prev_a;
+    }
+
+    pub(super) fn adi(&mut self, inst: u8) {
+        todo!("Memory");
+    }
+
+    pub(super) fn aci(&mut self, inst: u8) {
+        todo!("Memory");
+    }
+
+    pub(super) fn dad(&mut self, inst: u8) {
+        let s = (inst >> 4) & 0x03;
+        let value = self.get_reg_pair(s);
+        let prev_hl = self.get_reg_pair(2);
+        self.set_reg_pair(2, prev_hl + value);
+        let cur_hl = self.get_reg_pair(2);
+        self.cy = cur_hl < prev_hl;
     }
 }
