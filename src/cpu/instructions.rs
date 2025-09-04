@@ -67,6 +67,7 @@ impl CPU {
             },
             _ => panic!("Instrução não encontrada: {inst:X} / {inst:b}"),
         }
+    }
 
     pub(super) fn add(&mut self, inst: u8) {
         let s = inst & 0x07;
