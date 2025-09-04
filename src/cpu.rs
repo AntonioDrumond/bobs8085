@@ -37,7 +37,7 @@ pub struct CPU {
 
 #[allow(dead_code, unused_variables)]
 impl CPU {
-
+    #[rustfmt::skip]
     pub fn print_state(&self) {
         println!("📥A  => {:02X} - {:08b}    |    🚩S  => {}", self.a, self.a, self.s);
         println!("📥B  => {:02X} - {:08b}    |    🚩Z  => {}", self.b, self.b, self.z);
