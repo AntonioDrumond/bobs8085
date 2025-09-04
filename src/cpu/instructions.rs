@@ -1,5 +1,6 @@
 use super::CPU;
 
+#[allow(dead_code, unused_variables)]
 impl CPU {
     pub(super) fn mov(&mut self, inst: u8) {
         let s = inst & 0x07;
