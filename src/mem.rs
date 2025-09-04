@@ -1,5 +1,5 @@
 #[allow(dead_code, unused_variables)]
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Memory { 
     arr: Vec<u8>,
 }

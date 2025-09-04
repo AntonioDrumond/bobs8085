@@ -32,7 +32,7 @@ pub struct CPU {
     ac: bool, // Auxiliary Carry
     p: bool,  // Parity
     cy: bool, // Carry
-    mem: &mut Memory,
+    mem: Memory,
 }
 
 #[allow(dead_code, unused_variables)]
