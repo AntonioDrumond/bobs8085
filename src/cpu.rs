@@ -175,8 +175,8 @@ impl CPU {
             0x0B | 0x1B | 0x2B => self.dcx(inst),
             0x80..=0x87 => self.add(inst), // Conferir datasheet com prof -> ADD M
             0x88..=0x8F => self.adc(inst),
-            0xC6 => todo!("ADI sem carry"),
-            0xCE => todo!("ACI (ADI com carry)"),
+            0xC6 => self.adi(bus, inst),
+            0xCE => self.aci(bus, inst),
             0x09 | 0x19 | 0x29 | 0x39 => self.dad(inst),
             0x90..=0x9F => todo!("SUBs"),
             0xD6 => todo!("SUI"),

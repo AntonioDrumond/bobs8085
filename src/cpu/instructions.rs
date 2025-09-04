@@ -1,4 +1,5 @@
 use super::CPU;
+use crate::bus::Bus;
 
 impl CPU {
     pub(super) fn mov(&mut self, inst: u8) {
@@ -35,36 +36,44 @@ impl CPU {
     pub(super) fn rotate(&mut self, inst: u8) {
         let which = inst >> 3;
         match which {
-            0 => { // RLC
+            0 => {
+                // RLC
                 let carry = self.a & 0x80 == 0x80;
                 self.a <<= 1;
                 if carry {
                     self.cy = true;
                     self.a |= 0x01;
                 }
-            },
-            1 => { // RRC
+            }
+            1 => {
+                // RRC
                 let carry = self.a & 0x01 == 0x01;
                 self.a >>= 1;
                 if carry {
                     self.cy = true;
                     self.a |= 0x80;
                 }
-            },
-            2 => { // RAL
+            }
+            2 => {
+                // RAL
                 let cyout = self.cy;
-                let cyin  = self.a & 0x80 == 0x80;
+                let cyin = self.a & 0x80 == 0x80;
                 self.a <<= 1;
-                if cyout { self.a |= 0x01; }
+                if cyout {
+                    self.a |= 0x01;
+                }
                 self.cy = cyin;
-            },
-            3 => { // RAR
+            }
+            3 => {
+                // RAR
                 let cyout = self.cy;
-                let cyin  = self.a & 0x01 == 0x01;
+                let cyin = self.a & 0x01 == 0x01;
                 self.a >>= 1;
-                if cyout { self.a |= 0x80; }
+                if cyout {
+                    self.a |= 0x80;
+                }
                 self.cy = cyin;
-            },
+            }
             _ => panic!("Instrução não encontrada: {inst:X} / {inst:b}"),
         }
     }
@@ -91,12 +100,24 @@ impl CPU {
         self.cy = self.a < prev_a;
     }
 
-    pub(super) fn adi(&mut self, inst: u8) {
-        todo!("Memory");
+    pub(super) fn adi(&mut self, bus: &mut Bus, inst: u8) {
+        let value = bus.mem_get8(self.pc + 1);
+        let prev_a = self.a;
+        self.a = prev_a + value;
+        self.update_s(self.a);
+        self.update_z(self.a);
+        self.update_p(self.a);
+        self.cy = self.a < prev_a;
     }
 
-    pub(super) fn aci(&mut self, inst: u8) {
-        todo!("Memory");
+    pub(super) fn aci(&mut self, bus: &mut Bus, inst: u8) {
+        let value = bus.mem_get8(self.pc + 1);
+        let prev_a = self.a;
+        self.a = prev_a + value + self.cy as u8;
+        self.update_s(self.a);
+        self.update_z(self.a);
+        self.update_p(self.a);
+        self.cy = self.a < prev_a;
     }
 
     pub(super) fn dad(&mut self, inst: u8) {
