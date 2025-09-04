@@ -14,6 +14,7 @@ impl Default for Bus {
     }
 }
 
+#[allow(dead_code, unused_variables)]
 impl Bus {
     pub fn new() -> Bus {
         Bus { mem: Memory::default() }
@@ -33,5 +34,13 @@ impl Bus {
 
     pub fn mem_set16(&mut self, pos:u16, value:u8) {
         self.mem.set8(pos, value);
+    }
+
+    pub fn mem_dump(&self) {
+        self.mem.dump();
+    }
+
+    pub fn mem_print(&self) {
+        self.mem.print();
     }
 }

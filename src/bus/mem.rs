@@ -24,7 +24,7 @@ impl Memory {
         }
     }
 
-    pub fn dump(){
+    pub fn dump(&self){
         todo!();
     }
 
