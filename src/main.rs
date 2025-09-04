@@ -1,4 +1,5 @@
 mod cpu;
+mod mem;
 use crate::cpu::CPU;
 
 fn main() {

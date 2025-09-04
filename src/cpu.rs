@@ -1,5 +1,7 @@
 mod instructions;
 
+use crate::mem::Memory;
+
 #[allow(dead_code)]
 enum Target {
     A,
@@ -30,6 +32,7 @@ pub struct CPU {
     ac: bool, // Auxiliary Carry
     p: bool,  // Parity
     cy: bool, // Carry
+    mem: &mut Memory,
 }
 
 #[allow(dead_code, unused_variables)]
