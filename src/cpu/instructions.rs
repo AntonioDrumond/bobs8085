@@ -1,3 +1,4 @@
+use crate::bus::Bus;
 use super::CPU;
 
 #[allow(dead_code, unused_variables)]
@@ -108,4 +109,82 @@ impl CPU {
         let cur_hl = self.get_reg_pair(2);
         self.cy = cur_hl < prev_hl;
     }
+
+    pub(super) fn push(&mut self, inst: u8, bus: &mut Bus) {
+        const STACK_START: u16 = 0xD000;
+        if self.sp <= 0xC000 { self.sp = STACK_START; }
+        let which = (inst >> 4) & 0x03;
+        match which {
+            0 => { // BC
+                self.sp -= 1;
+                bus.mem_set8(self.sp, self.b);
+                self.sp -= 1;
+                bus.mem_set8(self.sp, self.c);
+            }
+            1 => { // DE
+                self.sp -= 1;
+                bus.mem_set8(self.sp, self.d);
+                self.sp -= 1;
+                bus.mem_set8(self.sp, self.e);
+            }
+            2 => { // HL
+                self.sp -= 1;
+                bus.mem_set8(self.sp, self.h);
+                self.sp -= 1;
+                bus.mem_set8(self.sp, self.l);
+            }
+            3 => { // PSW - AF
+                self.sp -= 1;
+                bus.mem_set8(self.sp, self.a);
+                self.sp -= 1;
+                let mut flags: u8 = 0;
+                if self.cy { flags += 1;   }
+                if self.p  { flags += 4;   }
+                if self.ac { flags += 16;  }
+                if self.z  { flags += 64;  }
+                if self.s  { flags += 128; }
+                bus.mem_set8(self.sp, flags);
+            }
+            _ => panic!("Instrução não encontrada: {inst:X} / {inst:b}"),
+        }
+    }
+
+    pub(super) fn pop(&mut self, inst: u8, bus: &mut Bus) {
+        if self.sp == 0xCFFF { self.sp = 0x0000; }
+        let which = (inst >> 4) & 0x03;
+        match which {
+            0 => { // BC
+                self.c = bus.mem_get8(self.sp);
+                self.sp += 1;
+                self.b = bus.mem_get8(self.sp);
+                self.sp += 1;
+            }
+            1 => { // DE
+                self.e = bus.mem_get8(self.sp);
+                self.sp += 1;
+                self.d = bus.mem_get8(self.sp);
+                self.sp += 1;
+            }
+            2 => { // HL
+                self.l = bus.mem_get8(self.sp);
+                self.sp += 1;
+                self.h = bus.mem_get8(self.sp);
+                self.sp += 1;
+            }
+            3 => { // PSW - AF
+                let flags = bus.mem_get8(self.sp);
+                self.s = (flags & 0x80) == 0x80;
+                self.z = (flags & 0x40) == 0x40;
+                self.ac = (flags & 0x10) == 0x10;
+                self.p = (flags & 0x04) == 0x04;
+                self.cy = (flags & 0x01) == 0x01;
+                self.sp += 1;
+                self.a = bus.mem_get8(self.sp);
+                self.sp += 1;
+            }
+            _ => panic!("Instrução não encontrada: {inst:X} / {inst:b}"),
+        }
+        if self.sp >= 0xCFFF { self.sp = 0xC000; }
+    }
+
 }
