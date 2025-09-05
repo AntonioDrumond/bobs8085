@@ -19,7 +19,7 @@ impl Memory {
     pub fn print(&self) {
         let mut i = 0;
         while i < self.arr.len()-1 {
-            println!("{:04X} => {:X?}", i, &self.arr[i..i+16]);
+            println!("{:04X} => {:02X?}", i, &self.arr[i..i+16]);
             i += 16;
         }
     }
@@ -41,12 +41,21 @@ impl Memory {
     }
 
     pub fn set16(&mut self, pos:u16, value:u16) {
-        let hi:u8 = (value & 0xF) as u8;
-        let lo:u8 = (value >> 4) as u8;
+        let hi:u8 = (value & 0x00FF) as u8;
+        let lo:u8 = (value >> 8) as u8;
         self.arr[pos as usize] = lo;
         self.arr[pos as usize + 1] = hi;
         self.arr[0xFFFF+1] = 0;
     }
+
+    pub fn set16_reverse(&mut self, pos:u16, value:u16) {
+        let lo:u8 = (value & 0x00FF) as u8;
+        let hi:u8 = (value >> 8) as u8;
+        self.arr[pos as usize] = lo;
+        self.arr[pos as usize + 1] = hi;
+        self.arr[0xFFFF+1] = 0;
+    }
+
 
 }
 
