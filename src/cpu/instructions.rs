@@ -111,8 +111,7 @@ impl CPU {
     }
 
     pub(super) fn push(&mut self, inst: u8, bus: &mut Bus) {
-        const STACK_START: u16 = 0xD000;
-        if self.sp <= 0xC000 { self.sp = STACK_START; }
+        if self.sp <= 0xC000 { self.sp = 0xD000; }
         let which = (inst >> 4) & 0x03;
         match which {
             0 => { // BC
@@ -198,6 +197,112 @@ impl CPU {
         bus.mem_set8(self.sp + 1, self.h);
         self.l = tmp_l;
         self.h = tmp_h;
+    }
+
+    pub(super) fn pchl(&mut self) {
+        self.pc = self.get_reg_pair(2);
+    }
+
+    pub(super) fn jump(&mut self, inst:u8, bus: &Bus) {
+        match inst {
+            0xC3 => { // jmp
+                self.pc = self.fetch16(bus);
+            }
+            0xDA => { // jc
+                if self.cy { self.pc = self.fetch16(bus); }
+            }
+            0xD2 => { // jnc
+                if !self.cy { self.pc = self.fetch16(bus); }
+            }
+            0xCA => { // jz
+                if self.z { self.pc = self.fetch16(bus); }
+            }
+            0xC2 => { // jnz
+                if !self.z { self.pc = self.fetch16(bus); }
+            }
+            0xF2 => { // jp
+                if !self.s { self.pc = self.fetch16(bus); }
+            }
+            0xFA => { // jn
+                if self.s { self.pc = self.fetch16(bus); }
+            }
+            0xEA => { // jpe
+                if self.p { self.pc = self.fetch16(bus); }
+            }
+            0xE2 => { // jpo
+                if !self.p { self.pc = self.fetch16(bus); }
+            }
+            _ => panic!("Instrução não encontrada: {inst:X} / {inst:b}"),
+        }
+    }
+
+    pub(super) fn call(&mut self, inst:u8, bus: &mut Bus) {
+        println!("CALLED HERE");
+        if self.sp <= 0xC000 { self.sp = 0xD000; }
+        match inst {
+            0xCD => { // call 
+                self.sp -= 2;
+                bus.mem_set16_reverse(self.sp, self.pc);
+                self.pc = self.fetch16(bus);
+            }
+            0xDC => { // cc
+                if self.cy {
+                    self.sp -= 2;
+                    bus.mem_set16_reverse(self.sp, self.pc);
+                    self.pc = self.fetch16(bus);
+                }
+            }
+            0xD4 => { // cnc 
+                if !self.cy {
+                    self.pc = self.fetch16(bus);
+                    self.sp -= 2;
+                    bus.mem_set16_reverse(self.sp, self.pc);
+                }
+            }
+            0xCC => { // cz
+                if self.z {
+                    self.sp -= 2;
+                    bus.mem_set16_reverse(self.sp, self.pc);
+                    self.pc = self.fetch16(bus);
+                }
+            }
+            0xC4 => { // cnz
+                if !self.z {
+                    self.sp -= 2;
+                    bus.mem_set16_reverse(self.sp, self.pc);
+                    self.pc = self.fetch16(bus);
+                }
+            }
+            0xF4 => { // cp
+                if !self.s {
+                    self.pc = self.fetch16(bus);
+                    self.sp -= 2;
+                    bus.mem_set16_reverse(self.sp, self.pc);
+                }
+            }
+            0xFC => { // cn
+                if self.s {
+                    self.sp -= 2;
+                    bus.mem_set16_reverse(self.sp, self.pc);
+                    self.pc = self.fetch16(bus);
+                }
+            }
+            0xEC => { // cpe
+                if self.p {
+                    self.sp -= 2;
+                    bus.mem_set16_reverse(self.sp, self.pc);
+                    self.pc = self.fetch16(bus);
+                }
+            }
+            0xE4 => { // cpo
+                if !self.p {
+                    self.sp -= 2;
+                    bus.mem_set16_reverse(self.sp, self.pc);
+                    self.pc = self.fetch16(bus);
+                }
+            }
+            _ => panic!("Instrução não encontrada: {inst:X} / {inst:b}"),
+        }
     }
 
 }
