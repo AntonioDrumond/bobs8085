@@ -187,4 +187,17 @@ impl CPU {
         if self.sp >= 0xCFFF { self.sp = 0xC000; }
     }
 
+    pub(super) fn sphl(&mut self) {
+        self.sp = self.get_reg_pair(2);
+    }
+
+    pub(super) fn xthl(&mut self, bus: &mut Bus) {
+        let tmp_l: u8 = bus.mem_get8(self.sp);
+        let tmp_h: u8 = bus.mem_get8(self.sp + 1);
+        bus.mem_set8(self.sp, self.l);
+        bus.mem_set8(self.sp + 1, self.h);
+        self.l = tmp_l;
+        self.h = tmp_h;
+    }
+
 }

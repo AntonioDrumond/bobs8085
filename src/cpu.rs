@@ -101,14 +101,12 @@ impl CPU {
                 self.h = l;
                 self.l = r;
             }
-            // Just for specific cenarios I guess
-            // Probably unsafe to be here
             3 => self.sp = value,
             _ => panic!("Unknown target"),
         }
     }
 
-    fn get_reg_pair(&mut self, target: u8) -> u16 {
+    fn get_reg_pair(&self, target: u8) -> u16 {
         let mut value: u16;
         match target {
             0 => {
@@ -150,8 +148,7 @@ impl CPU {
         }
     }
 
-    pub fn execute(&mut self, inst: u8, bus: &mut Bus) /*-> u32 <- why? */
-    {
+    pub fn execute(&mut self, inst: u8, bus: &mut Bus) {
         match inst {
             0x76 => todo!("HLT"),
             0x40..=0x7F => self.mov(inst),
@@ -164,10 +161,10 @@ impl CPU {
             0x22 => todo!("SHLD"),
             0x2A => todo!("LHLD"),
             0xEB => todo!("XCHG"),
-            0xC5 | 0xD5 | 0xE5 | 0xF5 => todo!("PUSH Pairs"),
-            0xC1 | 0xD1 | 0xE1 | 0xF1 => todo!("POP Pairs"),
-            0xE3 => todo!("XTHL"),
-            0xF9 => todo!("SPHL"),
+            0xC5 | 0xD5 | 0xE5 | 0xF5 => self.push(inst, bus),
+            0xC1 | 0xD1 | 0xE1 | 0xF1 => self.pop(inst, bus),
+            0xE3 => self.xthl(bus),
+            0xF9 => self.sphl(),
             0x33 => todo!("INX SP"),
             0x3B => todo!("DCX SP"),
             0xC3 | 0xDA | 0xD2 | 0xCA | 0xC2 | 0xF2 | 0xFA | 0xEA | 0xE2 => todo!("Jumps"),
