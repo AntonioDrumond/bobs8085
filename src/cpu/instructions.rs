@@ -305,4 +305,64 @@ impl CPU {
         }
     }
 
+    pub(super) fn ret(&mut self, inst: u8, bus: &Bus) {
+        if self.sp == 0xCFFF { self.sp = 0x0000; }
+        match inst {
+            0xC9 => { // ret
+                self.pc = bus.mem_get16_reverse(self.sp);
+                self.sp += 2;
+            }
+            0xD8 => { // rc
+                if self.cy {
+                    self.pc = bus.mem_get16_reverse(self.sp);
+                    self.sp += 2;
+                }
+            }
+            0xD0 => { // rnc
+                if !self.cy {
+                    self.pc = bus.mem_get16_reverse(self.sp);
+                    self.sp += 2;
+                }
+            }
+            0xC8 => { // rz
+                if self.z {
+                    self.pc = bus.mem_get16_reverse(self.sp);
+                    self.sp += 2;
+                }
+            }
+            0xC0 => { // rnz
+                if !self.z {
+                    self.pc = bus.mem_get16_reverse(self.sp);
+                    self.sp += 2;
+                }
+            }
+            0xF0 => { //rp
+                if !self.s {
+                    self.pc = bus.mem_get16_reverse(self.sp);
+                    self.sp += 2;
+                }
+            }
+            0xF8 => { // rm
+                if self.s {
+                    self.pc = bus.mem_get16_reverse(self.sp);
+                    self.sp += 2;
+                }
+            }
+            0xE8 => { // rpe
+                if self.p {
+                    self.pc = bus.mem_get16_reverse(self.sp);
+                    self.sp += 2;
+                }
+            }
+            0xE0 => { // rpo
+                if !self.p {
+                    self.pc = bus.mem_get16_reverse(self.sp);
+                    self.sp += 2;
+                }
+            }
+            _ => panic!("Instrução não encontrada: {inst:X} / {inst:b}"),
+        }
+        if self.sp >= 0xCFFF { self.sp = 0xC000; }
+    }
+
 }

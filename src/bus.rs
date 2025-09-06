@@ -28,6 +28,10 @@ impl Bus {
         self.mem.get16(pos)
     }
 
+    pub fn mem_get16_reverse(&self, pos:u16) -> u16 {
+        self.mem.get16_reverse(pos)
+    }
+
     pub fn mem_set8(&mut self, pos:u16, value:u8) {
         self.mem.set8(pos, value);
     }
