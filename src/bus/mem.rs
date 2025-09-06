@@ -33,11 +33,11 @@ impl Memory {
     }
 
     pub fn get16(&self, pos:u16) -> u16 {
-        (self.arr[pos as usize] as u16) << 4 | self.arr[pos as usize + 1] as u16
+        (self.arr[pos as usize] as u16) << 8 | self.arr[pos as usize + 1] as u16
     }
 
     pub fn get16_reverse(&self, pos:u16) -> u16 {
-        (self.arr[pos as usize + 1] as u16) << 4 | self.arr[pos as usize] as u16
+        (self.arr[pos as usize + 1] as u16) << 8 | self.arr[pos as usize] as u16
     }
 
     pub fn set8(&mut self, pos:u16, value:u8) {

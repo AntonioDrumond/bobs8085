@@ -237,18 +237,22 @@ impl CPU {
     }
 
     pub(super) fn call(&mut self, inst:u8, bus: &mut Bus) {
-        println!("CALLED HERE");
         if self.sp <= 0xC000 { self.sp = 0xD000; }
         match inst {
             0xCD => { // call 
+                println!("pc b4 = {:X}", self.pc);
                 self.sp -= 2;
-                bus.mem_set16_reverse(self.sp, self.pc);
-                self.pc = self.fetch16(bus);
+                bus.mem_set16_reverse(self.sp, self.pc + 2);
+                let var = self.fetch16(bus);
+                self.pc = var;
+                println!("fetch = {:X}", var);
+                // self.pc = self.fetch16(bus);
+                println!("pc aft = {:X}", self.pc);
             }
             0xDC => { // cc
                 if self.cy {
                     self.sp -= 2;
-                    bus.mem_set16_reverse(self.sp, self.pc);
+                    bus.mem_set16_reverse(self.sp, self.pc + 2);
                     self.pc = self.fetch16(bus);
                 }
             }
@@ -256,20 +260,20 @@ impl CPU {
                 if !self.cy {
                     self.pc = self.fetch16(bus);
                     self.sp -= 2;
-                    bus.mem_set16_reverse(self.sp, self.pc);
+                    bus.mem_set16_reverse(self.sp, self.pc + 2);
                 }
             }
             0xCC => { // cz
                 if self.z {
                     self.sp -= 2;
-                    bus.mem_set16_reverse(self.sp, self.pc);
+                    bus.mem_set16_reverse(self.sp, self.pc + 2);
                     self.pc = self.fetch16(bus);
                 }
             }
             0xC4 => { // cnz
                 if !self.z {
                     self.sp -= 2;
-                    bus.mem_set16_reverse(self.sp, self.pc);
+                    bus.mem_set16_reverse(self.sp, self.pc + 2);
                     self.pc = self.fetch16(bus);
                 }
             }
@@ -277,27 +281,27 @@ impl CPU {
                 if !self.s {
                     self.pc = self.fetch16(bus);
                     self.sp -= 2;
-                    bus.mem_set16_reverse(self.sp, self.pc);
+                    bus.mem_set16_reverse(self.sp, self.pc + 2);
                 }
             }
             0xFC => { // cn
                 if self.s {
                     self.sp -= 2;
-                    bus.mem_set16_reverse(self.sp, self.pc);
+                    bus.mem_set16_reverse(self.sp, self.pc + 2);
                     self.pc = self.fetch16(bus);
                 }
             }
             0xEC => { // cpe
                 if self.p {
                     self.sp -= 2;
-                    bus.mem_set16_reverse(self.sp, self.pc);
+                    bus.mem_set16_reverse(self.sp, self.pc + 2);
                     self.pc = self.fetch16(bus);
                 }
             }
             0xE4 => { // cpo
                 if !self.p {
                     self.sp -= 2;
-                    bus.mem_set16_reverse(self.sp, self.pc);
+                    bus.mem_set16_reverse(self.sp, self.pc + 2);
                     self.pc = self.fetch16(bus);
                 }
             }

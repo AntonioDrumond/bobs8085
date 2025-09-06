@@ -45,16 +45,26 @@ impl CPU {
         println!("📥E  => {:02X} - {:08b}    |    🚩CY => {}", self.e, self.e, self.cy);
         println!("📥H  => {:02X} - {:08b}", self.h, self.h);
         println!("📥L  => {:02X} - {:08b}", self.l, self.l);
-        println!("📥SP => {:02X} - {:08b}", self.sp, self.sp);
-        println!("📥PC => {:02X} - {:08b}", self.pc, self.pc);
+        println!("📥SP => {:04X} - {:08b}", self.sp, self.sp);
+        println!("📥PC => {:04X} - {:08b}", self.pc, self.pc);
     }
 
-    fn fetch8(&self, bus: &Bus) -> u8 {
-        bus.mem_get8(self.pc + 1)
+    pub fn set_pc(&mut self, val: u16) {
+        self.pc = val;
     }
 
-    fn fetch16(&self, bus: &Bus) -> u16 {
-        bus.mem_get16(self.pc + 1)
+    pub fn get_pc(&self) -> u16 {
+        self.pc
+    }
+
+    fn fetch8(&mut self, bus: &Bus) -> u8 {
+        self.pc += 1;
+        bus.mem_get8(self.pc - 1)
+    }
+
+    fn fetch16(&mut self, bus: &Bus) -> u16 {
+        self.pc += 2;
+        bus.mem_get16_reverse(self.pc - 2)
     }
 
     fn get_reg(&self, target: u8) -> u8 {
@@ -149,6 +159,7 @@ impl CPU {
     }
 
     pub fn execute(&mut self, inst: u8, bus: &mut Bus) {
+        self.pc += 1;
         match inst {
             0x76 => todo!("HLT"),
             0x40..=0x7F => self.mov(inst),
@@ -204,7 +215,7 @@ impl CPU {
             0x00 => todo!("NOP"),
             0x20 => todo!("RIM"),
             0x30 => todo!("SIM"),
-            _ => todo!("Instrução não identificada :c"),
+            _ => todo!("Instrução não identificada: {:02X}", inst),
         }
     }
 }
