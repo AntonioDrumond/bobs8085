@@ -44,8 +44,14 @@ impl Bus {
         self.mem.set16_reverse(pos, value);
     }
 
-    pub fn mem_dump(&self) {
-        self.mem.dump();
+    pub fn mem_dump(&self) -> std::io::Result<()> {
+        self.mem.dump()?;
+        Ok(())
+    }
+
+    pub fn mem_write_file(&self) -> std::io::Result<()> {
+        self.mem.write_file()?;
+        Ok(())
     }
 
     pub fn mem_print(&self) {

@@ -1,3 +1,6 @@
+use std::fs::File;
+use std::io::prelude::*;
+
 #[allow(dead_code, unused_variables)]
 #[derive(Debug)]
 pub struct Memory { 
@@ -24,8 +27,26 @@ impl Memory {
         }
     }
 
-    pub fn dump(&self){
-        todo!();
+    pub fn write_file(&self) -> std::io::Result<()> {
+        let mut file = File::create("memory.bin")?;
+        let mut i = 0;
+        while i < self.arr.len()-1 {
+            let slice = &self.arr[i..i+16.min(&self.arr.len()-i)];
+            let line = format!("{:04X} => {:02X?}\n", i, slice);
+            file.write_all(line.as_bytes())?;
+            i += 16;
+        }
+        Ok(())
+    }
+
+    pub fn dump(&self) -> std::io::Result<()> {
+        let mut file = File::create("memory.bin")?;
+        let mut i = 0;
+        while i < self.arr.len()-1 {
+            file.write_all(&self.arr[i..i+16])?;
+            i += 16;
+        }
+        Ok(())
     }
 
     pub fn get8(&self, pos:u16) -> u8 {
