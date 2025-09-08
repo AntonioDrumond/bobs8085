@@ -16,7 +16,7 @@ fn main() {
 
     cpu.print_state();
     bus.mem_print();
-    while true {
+    loop {
         cpu.execute(bus.mem_get8(cpu.get_pc()), &mut bus);
         cpu.print_state();
         bus.mem_print();
