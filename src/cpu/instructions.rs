@@ -431,4 +431,19 @@ impl CPU {
         }
     }
 
+    pub(super) fn cma(&mut self) {
+        self.a = !self.a;
+    }
+
+    pub(super) fn stc(&mut self) {
+        self.cy = true;
+    }
+
+    pub(super) fn cmc(&mut self) {
+        self.cy = !self.cy;
+    }
+
+    pub(super) fn nop(&self) {
+    }
+
 }
