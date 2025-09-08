@@ -100,7 +100,7 @@ impl CPU {
         self.cy = self.a < prev_a;
     }
 
-    pub(super) fn adi(&mut self, bus: &mut Bus, inst: u8) {
+    pub(super) fn adi(&mut self, bus: &mut Bus) {
         let value = bus.mem_get8(self.pc + 1);
         let prev_a = self.a;
         self.a = prev_a + value;
@@ -110,7 +110,7 @@ impl CPU {
         self.cy = self.a < prev_a;
     }
 
-    pub(super) fn aci(&mut self, bus: &mut Bus, inst: u8) {
+    pub(super) fn aci(&mut self, bus: &mut Bus) {
         let value = bus.mem_get8(self.pc + 1);
         let prev_a = self.a;
         self.a = prev_a + value + self.cy as u8;
