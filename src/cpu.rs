@@ -45,8 +45,8 @@ impl CPU {
         println!("📥E  => {:02X} - {:08b}    |    🚩CY => {}", self.e, self.e, self.cy);
         println!("📥H  => {:02X} - {:08b}", self.h, self.h);
         println!("📥L  => {:02X} - {:08b}", self.l, self.l);
-        println!("📥SP => {:02X} - {:08b}", self.sp, self.sp);
-        println!("📥PC => {:02X} - {:08b}", self.pc, self.pc);
+        println!("📥SP => {:04X} - {:08b}", self.sp, self.sp);
+        println!("📥PC => {:04X} - {:08b}", self.pc, self.pc);
     }
 
     fn fetch8(&self, bus: &Bus) -> u8 {
@@ -178,7 +178,7 @@ impl CPU {
             0x05 | 0x0D | 0x15 | 0x1D | 0x25 | 0x2D | 0x35 | 0x3D => self.dcr(inst),
             0x03 | 0x13 | 0x23 => self.inx(inst),
             0x0B | 0x1B | 0x2B => self.dcx(inst),
-            0x80..=0x87 => self.add(inst), // Conferir datasheet com prof -> ADD M
+            0x80..=0x87 => self.add(inst),
             0x88..=0x8F => self.adc(inst),
             0xC6 => todo!("ADI sem carry"),
             0xCE => todo!("ACI (ADI com carry)"),
@@ -204,7 +204,7 @@ impl CPU {
             0x00 => todo!("NOP"),
             0x20 => todo!("RIM"),
             0x30 => todo!("SIM"),
-            _ => todo!("Instrução não identificada :c"),
+            _ => panic!("Instrução não identificada :c"),
         }
     }
 }
