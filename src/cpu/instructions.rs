@@ -3,23 +3,23 @@ use super::CPU;
 
 #[allow(dead_code, unused_variables)]
 impl CPU {
-    pub(super) fn mov(&mut self, inst: u8) {
+    pub(super) fn mov(&mut self, bus: &mut Bus, inst: u8) {
         let s = inst & 0x07;
         let d = (inst >> 3) & 0x07;
-        let value = self.get_reg(s);
-        self.set_reg(d, value);
+        let value = self.get_reg(bus, s);
+        self.set_reg(bus, d, value);
     }
 
-    pub(super) fn inr(&mut self, inst: u8) {
+    pub(super) fn inr(&mut self, bus: &mut Bus, inst: u8) {
         let d = (inst >> 3) & 0x07;
-        let value = self.get_reg(d);
-        self.set_reg(d, value + 1);
+        let value = self.get_reg(bus, d);
+        self.set_reg(bus, d, value + 1);
     }
 
-    pub(super) fn dcr(&mut self, inst: u8) {
+    pub(super) fn dcr(&mut self, bus: &mut Bus, inst: u8) {
         let d = (inst >> 3) & 0x07;
-        let value = self.get_reg(d);
-        self.set_reg(d, value - 1);
+        let value = self.get_reg(bus, d);
+        self.set_reg(bus, d, value - 1);
     }
 
     pub(super) fn inx(&mut self, inst: u8) {
@@ -71,9 +71,9 @@ impl CPU {
         }
     }
 
-    pub(super) fn add(&mut self, inst: u8) {
+    pub(super) fn add(&mut self, bus: &mut Bus, inst: u8) {
         let s = inst & 0x07;
-        let value = self.get_reg(s);
+        let value = self.get_reg(bus, s);
         let prev_a = self.a;
         self.a = prev_a + value;
         self.update_s(self.a);
@@ -82,9 +82,9 @@ impl CPU {
         self.cy = self.a < prev_a;
     }
 
-    pub(super) fn adc(&mut self, inst: u8) {
+    pub(super) fn adc(&mut self, bus: &mut Bus, inst: u8) {
         let s = inst & 0x07;
-        let value = self.get_reg(s);
+        let value = self.get_reg(bus, s);
         let prev_a = self.a;
         self.a = prev_a + value + self.cy as u8;
         self.update_s(self.a);
@@ -367,6 +367,68 @@ impl CPU {
             _ => panic!("Instrução não encontrada: {inst:X} / {inst:b}"),
         }
         if self.sp >= 0xCFFF { self.sp = 0xC000; }
+    }
+
+    pub(super) fn ana(&mut self, bus: &mut Bus, inst: u8) {
+        let which = inst & 0x07;
+        self.a &= self.get_reg(bus, which);
+    }
+
+    pub(super) fn ora(&mut self, bus: &Bus, inst: u8) {
+        let which = inst & 0x07;
+        self.a |= self.get_reg(bus, which);
+    }
+
+    pub(super) fn xra(&mut self, bus: &Bus, inst: u8) {
+        let which = inst & 0x07;
+        self.a ^= self.get_reg(bus, which);
+    }
+
+    pub(super) fn cmp(&mut self, bus: &Bus, inst: u8) {
+        let which = inst & 0x07;
+        if self.a < self.get_reg(bus, which) {
+            self.cy = true;
+            self.z = false;
+        }
+        if self.a == self.get_reg(bus, which) {
+            self.cy = false;
+            self.z = true;
+        }
+        else {
+            self.cy = false;
+            self.z = false;
+        }
+    }
+
+    pub(super) fn ani(&mut self, bus: &Bus, inst: u8) {
+        let immediate = self.fetch8(bus);
+        self.a &= immediate;
+    }
+
+    pub(super) fn ori(&mut self, bus: &Bus, inst: u8) {
+        let immediate = self.fetch8(bus);
+        self.a |= immediate;
+    }
+
+    pub(super) fn xri(&mut self, bus: &Bus, inst: u8) {
+        let immediate = self.fetch8(bus);
+        self.a ^= immediate;
+    }
+
+    pub(super) fn cpi(&mut self, bus: &Bus, inst: u8) {
+        let immediate = self.fetch8(bus);
+        if self.a < immediate {
+            self.cy = true;
+            self.z = false;
+        }
+        if self.a == immediate {
+            self.cy = false;
+            self.z = true;
+        }
+        else {
+            self.cy = false;
+            self.z = false;
+        }
     }
 
 }

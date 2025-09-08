@@ -33,7 +33,6 @@ pub struct CPU {
     p: bool,  // Parity
     cy: bool, // Carry
 }
-
 #[allow(dead_code, unused_variables)]
 impl CPU {
     #[rustfmt::skip]
@@ -67,7 +66,7 @@ impl CPU {
         bus.mem_get16_reverse(self.pc - 2)
     }
 
-    fn get_reg(&self, target: u8) -> u8 {
+    fn get_reg(&self, bus: &Bus, target: u8) -> u8 {
         match target {
             0 => self.b,
             1 => self.c,
@@ -75,13 +74,13 @@ impl CPU {
             3 => self.e,
             4 => self.h,
             5 => self.l,
-            6 => todo!("Memory access"),
+            6 => bus.mem_get8(self.get_reg_pair(2)),
             7 => self.a,
             _ => panic!("Unknown target"),
         }
     }
 
-    pub fn set_reg(&mut self, target: u8, value: u8) {
+    pub fn set_reg(&mut self, bus: &mut Bus, target: u8, value: u8) {
         match target {
             0 => self.b = value,
             1 => self.c = value,
@@ -89,7 +88,7 @@ impl CPU {
             3 => self.e = value,
             4 => self.h = value,
             5 => self.l = value,
-            6 => todo!("Memory access"),
+            6 => bus.mem_set8(self.get_reg_pair(2), value),
             7 => self.a = value,
             _ => panic!("Unknown target"),
         }
@@ -162,7 +161,7 @@ impl CPU {
         self.pc += 1;
         match inst {
             0x76 => todo!("HLT"),
-            0x40..=0x7F => self.mov(inst),
+            0x40..=0x7F => self.mov(bus, inst),
             0x06 | 0x0E | 0x16 | 0x1E | 0x26 | 0x2E | 0x36 | 0x3E => todo!("MVIs"),
             0x01 | 0x11 | 0x21 => todo!("LXIs"),
             0x02 | 0x12 => todo!("STAXs"),
@@ -185,26 +184,26 @@ impl CPU {
             0xC7 | 0xCF | 0xD7 | 0xDF | 0xE7 | 0xEF | 0xf7 | 0xFF => todo!("RSTs"),
             0xDB => todo!("IN"),
             0xD3 => todo!("OUT"),
-            0x04 | 0x0C | 0x14 | 0x1C | 0x24 | 0x2C | 0x34 | 0x3C => self.inr(inst),
-            0x05 | 0x0D | 0x15 | 0x1D | 0x25 | 0x2D | 0x35 | 0x3D => self.dcr(inst),
+            0x04 | 0x0C | 0x14 | 0x1C | 0x24 | 0x2C | 0x34 | 0x3C => self.inr(bus, inst),
+            0x05 | 0x0D | 0x15 | 0x1D | 0x25 | 0x2D | 0x35 | 0x3D => self.dcr(bus, inst),
             0x03 | 0x13 | 0x23 => self.inx(inst),
             0x0B | 0x1B | 0x2B => self.dcx(inst),
-            0x80..=0x87 => self.add(inst),
-            0x88..=0x8F => self.adc(inst),
+            0x80..=0x87 => self.add(bus, inst),
+            0x88..=0x8F => self.adc(bus, inst),
             0xC6 => todo!("ADI sem carry"),
             0xCE => todo!("ACI (ADI com carry)"),
             0x09 | 0x19 | 0x29 | 0x39 => self.dad(inst),
             0x90..=0x9F => todo!("SUBs"),
             0xD6 => todo!("SUI"),
             0xDE => todo!("SBI"),
-            0xA0..=0xA7 => todo!("ANDs"),
-            0xA8..=0xAF => todo!("XORs"),
-            0xB0..=0xB7 => todo!("ORs"),
-            0xB8..=0xBF => todo!("CMPs"),
-            0xE6 => todo!("ANI"),
-            0xEE => todo!("XRI"),
-            0xF6 => todo!("ORI"),
-            0xFE => todo!("CPI"),
+            0xA0..=0xA7 => self.ana(bus, inst),
+            0xA8..=0xAF => self.xra(bus, inst),
+            0xB0..=0xB7 => self.ora(bus, inst),
+            0xB8..=0xBF => self.cmp(bus, inst),
+            0xE6 => self.cpi(bus, inst),
+            0xEE => self.xri(bus, inst),
+            0xF6 => self.ori(bus, inst),
+            0xFE => self.cpi(bus, inst),
             0x07 | 0x0F | 0x17 | 0x1F => self.rotate(inst),
             0x2F => todo!("CMA"),
             0x37 => todo!("STC"),
