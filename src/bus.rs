@@ -1,11 +1,13 @@
 mod mem;
+mod io;
+use crate::bus::io::Io;
 use crate::bus::mem::Memory;
 
 #[allow(dead_code, unused_variables)]
 #[derive(Debug)]
 pub struct Bus {
     mem: Memory,
-    // io: IO,
+    io: Io,
 }
 
 impl Default for Bus {
