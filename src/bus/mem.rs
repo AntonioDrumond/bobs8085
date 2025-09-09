@@ -28,14 +28,18 @@ impl Memory {
     }
 
     pub fn write_file(&self) -> std::io::Result<()> {
+
         let mut file = File::create("memory.bin")?;
         let mut i = 0;
+        let mut str = String::default();
+
         while i < self.arr.len()-1 {
             let slice = &self.arr[i..i+16.min(&self.arr.len()-i)];
             let line = format!("{:04X} => {:02X?}\n", i, slice);
-            file.write_all(line.as_bytes())?;
+            str.push_str(&line);
             i += 16;
         }
+        file.write_all(str.as_bytes())?;
         Ok(())
     }
 
