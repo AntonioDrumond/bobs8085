@@ -19,7 +19,7 @@ impl Default for Bus {
 #[allow(dead_code, unused_variables)]
 impl Bus {
     pub fn new() -> Bus {
-        Bus { mem: Memory::default() }
+        Bus { mem: Memory::default(), io: Io::default() }
     }
 
     pub fn mem_get8(&self, pos:u16) -> u8 {

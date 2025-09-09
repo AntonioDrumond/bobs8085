@@ -195,7 +195,7 @@ impl CPU {
     pub(super) fn dad(&mut self, inst: u8) {
         let s = (inst >> 4) & 0x03;
         let value = self.get_reg_pair(s);
-        let prev_hl = (self.h << 8) as u16 | self.l as u16;
+        let prev_hl = (self.h as u16) << 8 | self.l as u16;
         let cur_hl = prev_hl + value;
         self.h = (value >> 8) as u8;
         self.l = value as u8;
