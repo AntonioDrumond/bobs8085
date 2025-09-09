@@ -1,5 +1,5 @@
-use crate::bus::Bus;
 use super::CPU;
+use crate::bus::Bus;
 
 #[allow(dead_code, unused_variables)]
 impl CPU {
@@ -8,6 +8,73 @@ impl CPU {
         let d = (inst >> 3) & 0x07;
         let value = self.get_reg(bus, s);
         self.set_reg(bus, d, value);
+    }
+
+    pub(super) fn mvi(&mut self, bus: &mut Bus, inst: u8) {
+        let d = (inst >> 3) & 0x07;
+        let value = self.fetch8(bus);
+        self.set_reg(bus, d, value);
+    }
+
+    pub(super) fn lxi(&mut self, bus: &mut Bus, inst: u8) {
+        let d = (inst >> 4) & 0x03;
+        let value = self.fetch16(bus);
+        self.set_reg_pair(d, value);
+    }
+
+    pub(super) fn stax(&mut self, bus: &mut Bus, inst: u8) {
+        let s = (inst >> 4) & 1;
+        let addr: u16;
+        if s == 0 {
+            addr = (self.b as u16) << 8 | self.c as u16;
+        } else {
+            addr = (self.d as u16) << 8 | self.c as u16;
+        }
+        bus.mem_set8(addr, self.a);
+    }
+
+    pub(super) fn ldax(&mut self, bus: &mut Bus, inst: u8) {
+        let s = (inst >> 4) & 1;
+        let addr: u16;
+        if s == 0 {
+            addr = (self.b as u16) << 8 | self.c as u16;
+        } else {
+            addr = (self.d as u16) << 8 | self.c as u16;
+        }
+        let value = bus.mem_get8(addr);
+        self.a = value;
+    }
+
+    pub(super) fn sta(&mut self, bus: &mut Bus) {
+        let addr = self.fetch16(bus);
+        bus.mem_set8(addr, self.a);
+    }
+
+    pub(super) fn lda(&mut self, bus: &mut Bus) {
+        let addr = self.fetch16(bus);
+        self.a = bus.mem_get8(addr);
+    }
+
+    pub(super) fn shld(&mut self, bus: &mut Bus) {
+        let addr = self.fetch16(bus);
+        let value = (self.h as u16) << 8 | self.l as u16;
+        bus.mem_set16_reverse(addr, value);
+    }
+
+    pub(super) fn lhld(&mut self, bus: &mut Bus) {
+        let addr = self.fetch16(bus);
+        let value = bus.mem_get16_reverse(addr);
+        self.h = (value >> 8) as u8;
+        self.l = value as u8;
+    }
+
+    pub(super) fn xchg(&mut self) {
+        let h = self.h;
+        let l = self.l;
+        self.h = self.d;
+        self.l = self.d;
+        self.d = h;
+        self.e = l;
     }
 
     pub(super) fn inr(&mut self, bus: &mut Bus, inst: u8) {
@@ -135,9 +202,9 @@ impl CPU {
         self.cy = cur_hl < prev_hl;
     }
 
-    pub(super) fn sub(&mut self, inst: u8) {
+    pub(super) fn sub(&mut self, bus: &mut Bus, inst: u8) {
         let s = inst & 0x03;
-        let value = self.get_reg(s);
+        let value = self.get_reg(bus, s);
         let prev_a = self.a;
         self.a = prev_a - value;
         self.update_s(self.a);
@@ -147,9 +214,9 @@ impl CPU {
         self.cy = value > prev_a;
     }
 
-    pub(super) fn sbb(&mut self, inst: u8) {
+    pub(super) fn sbb(&mut self, bus: &mut Bus, inst: u8) {
         let s = inst & 0x03;
-        let value = self.get_reg(s) + self.cy as u8;
+        let value = self.get_reg(bus, s) + self.cy as u8;
         let prev_a = self.a;
         self.a = prev_a - value;
         self.update_s(self.a);
@@ -182,37 +249,53 @@ impl CPU {
     }
 
     pub(super) fn push(&mut self, inst: u8, bus: &mut Bus) {
-        if self.sp <= 0xC000 { self.sp = 0xD000; }
+        if self.sp <= 0xC000 {
+            self.sp = 0xD000;
+        }
         let which = (inst >> 4) & 0x03;
         match which {
-            0 => { // BC
+            0 => {
+                // BC
                 self.sp -= 1;
                 bus.mem_set8(self.sp, self.b);
                 self.sp -= 1;
                 bus.mem_set8(self.sp, self.c);
             }
-            1 => { // DE
+            1 => {
+                // DE
                 self.sp -= 1;
                 bus.mem_set8(self.sp, self.d);
                 self.sp -= 1;
                 bus.mem_set8(self.sp, self.e);
             }
-            2 => { // HL
+            2 => {
+                // HL
                 self.sp -= 1;
                 bus.mem_set8(self.sp, self.h);
                 self.sp -= 1;
                 bus.mem_set8(self.sp, self.l);
             }
-            3 => { // PSW - AF
+            3 => {
+                // PSW - AF
                 self.sp -= 1;
                 bus.mem_set8(self.sp, self.a);
                 self.sp -= 1;
                 let mut flags: u8 = 0;
-                if self.cy { flags += 1;   }
-                if self.p  { flags += 4;   }
-                if self.ac { flags += 16;  }
-                if self.z  { flags += 64;  }
-                if self.s  { flags += 128; }
+                if self.cy {
+                    flags += 1;
+                }
+                if self.p {
+                    flags += 4;
+                }
+                if self.ac {
+                    flags += 16;
+                }
+                if self.z {
+                    flags += 64;
+                }
+                if self.s {
+                    flags += 128;
+                }
                 bus.mem_set8(self.sp, flags);
             }
             _ => panic!("Instrução não encontrada: {inst:X} / {inst:b}"),
@@ -220,28 +303,34 @@ impl CPU {
     }
 
     pub(super) fn pop(&mut self, inst: u8, bus: &mut Bus) {
-        if self.sp == 0xCFFF { self.sp = 0x0000; }
+        if self.sp == 0xCFFF {
+            self.sp = 0x0000;
+        }
         let which = (inst >> 4) & 0x03;
         match which {
-            0 => { // BC
+            0 => {
+                // BC
                 self.c = bus.mem_get8(self.sp);
                 self.sp += 1;
                 self.b = bus.mem_get8(self.sp);
                 self.sp += 1;
             }
-            1 => { // DE
+            1 => {
+                // DE
                 self.e = bus.mem_get8(self.sp);
                 self.sp += 1;
                 self.d = bus.mem_get8(self.sp);
                 self.sp += 1;
             }
-            2 => { // HL
+            2 => {
+                // HL
                 self.l = bus.mem_get8(self.sp);
                 self.sp += 1;
                 self.h = bus.mem_get8(self.sp);
                 self.sp += 1;
             }
-            3 => { // PSW - AF
+            3 => {
+                // PSW - AF
                 let flags = bus.mem_get8(self.sp);
                 self.s = (flags & 0x80) == 0x80;
                 self.z = (flags & 0x40) == 0x40;
@@ -254,7 +343,9 @@ impl CPU {
             }
             _ => panic!("Instrução não encontrada: {inst:X} / {inst:b}"),
         }
-        if self.sp >= 0xCFFF { self.sp = 0xC000; }
+        if self.sp >= 0xCFFF {
+            self.sp = 0xC000;
+        }
     }
 
     pub(super) fn sphl(&mut self) {
@@ -274,43 +365,71 @@ impl CPU {
         self.pc = self.get_reg_pair(2);
     }
 
-    pub(super) fn jump(&mut self, inst:u8, bus: &Bus) {
+    pub(super) fn jump(&mut self, inst: u8, bus: &Bus) {
         match inst {
-            0xC3 => { // jmp
+            0xC3 => {
+                // jmp
                 self.pc = self.fetch16(bus);
             }
-            0xDA => { // jc
-                if self.cy { self.pc = self.fetch16(bus); }
+            0xDA => {
+                // jc
+                if self.cy {
+                    self.pc = self.fetch16(bus);
+                }
             }
-            0xD2 => { // jnc
-                if !self.cy { self.pc = self.fetch16(bus); }
+            0xD2 => {
+                // jnc
+                if !self.cy {
+                    self.pc = self.fetch16(bus);
+                }
             }
-            0xCA => { // jz
-                if self.z { self.pc = self.fetch16(bus); }
+            0xCA => {
+                // jz
+                if self.z {
+                    self.pc = self.fetch16(bus);
+                }
             }
-            0xC2 => { // jnz
-                if !self.z { self.pc = self.fetch16(bus); }
+            0xC2 => {
+                // jnz
+                if !self.z {
+                    self.pc = self.fetch16(bus);
+                }
             }
-            0xF2 => { // jp
-                if !self.s { self.pc = self.fetch16(bus); }
+            0xF2 => {
+                // jp
+                if !self.s {
+                    self.pc = self.fetch16(bus);
+                }
             }
-            0xFA => { // jn
-                if self.s { self.pc = self.fetch16(bus); }
+            0xFA => {
+                // jn
+                if self.s {
+                    self.pc = self.fetch16(bus);
+                }
             }
-            0xEA => { // jpe
-                if self.p { self.pc = self.fetch16(bus); }
+            0xEA => {
+                // jpe
+                if self.p {
+                    self.pc = self.fetch16(bus);
+                }
             }
-            0xE2 => { // jpo
-                if !self.p { self.pc = self.fetch16(bus); }
+            0xE2 => {
+                // jpo
+                if !self.p {
+                    self.pc = self.fetch16(bus);
+                }
             }
             _ => panic!("Instrução não encontrada: {inst:X} / {inst:b}"),
         }
     }
 
-    pub(super) fn call(&mut self, inst:u8, bus: &mut Bus) {
-        if self.sp <= 0xC000 { self.sp = 0xD000; }
+    pub(super) fn call(&mut self, inst: u8, bus: &mut Bus) {
+        if self.sp <= 0xC000 {
+            self.sp = 0xD000;
+        }
         match inst {
-            0xCD => { // call 
+            0xCD => {
+                // call
                 println!("pc b4 = {:X}", self.pc);
                 self.sp -= 2;
                 bus.mem_set16_reverse(self.sp, self.pc + 2);
@@ -320,56 +439,64 @@ impl CPU {
                 // self.pc = self.fetch16(bus);
                 println!("pc aft = {:X}", self.pc);
             }
-            0xDC => { // cc
+            0xDC => {
+                // cc
                 if self.cy {
                     self.sp -= 2;
                     bus.mem_set16_reverse(self.sp, self.pc + 2);
                     self.pc = self.fetch16(bus);
                 }
             }
-            0xD4 => { // cnc 
+            0xD4 => {
+                // cnc
                 if !self.cy {
                     self.pc = self.fetch16(bus);
                     self.sp -= 2;
                     bus.mem_set16_reverse(self.sp, self.pc + 2);
                 }
             }
-            0xCC => { // cz
+            0xCC => {
+                // cz
                 if self.z {
                     self.sp -= 2;
                     bus.mem_set16_reverse(self.sp, self.pc + 2);
                     self.pc = self.fetch16(bus);
                 }
             }
-            0xC4 => { // cnz
+            0xC4 => {
+                // cnz
                 if !self.z {
                     self.sp -= 2;
                     bus.mem_set16_reverse(self.sp, self.pc + 2);
                     self.pc = self.fetch16(bus);
                 }
             }
-            0xF4 => { // cp
+            0xF4 => {
+                // cp
                 if !self.s {
                     self.pc = self.fetch16(bus);
                     self.sp -= 2;
                     bus.mem_set16_reverse(self.sp, self.pc + 2);
                 }
             }
-            0xFC => { // cn
+            0xFC => {
+                // cn
                 if self.s {
                     self.sp -= 2;
                     bus.mem_set16_reverse(self.sp, self.pc + 2);
                     self.pc = self.fetch16(bus);
                 }
             }
-            0xEC => { // cpe
+            0xEC => {
+                // cpe
                 if self.p {
                     self.sp -= 2;
                     bus.mem_set16_reverse(self.sp, self.pc + 2);
                     self.pc = self.fetch16(bus);
                 }
             }
-            0xE4 => { // cpo
+            0xE4 => {
+                // cpo
                 if !self.p {
                     self.sp -= 2;
                     bus.mem_set16_reverse(self.sp, self.pc + 2);
@@ -381,55 +508,66 @@ impl CPU {
     }
 
     pub(super) fn ret(&mut self, inst: u8, bus: &Bus) {
-        if self.sp == 0xCFFF { self.sp = 0x0000; }
+        if self.sp == 0xCFFF {
+            self.sp = 0x0000;
+        }
         match inst {
-            0xC9 => { // ret
+            0xC9 => {
+                // ret
                 self.pc = bus.mem_get16_reverse(self.sp);
                 self.sp += 2;
             }
-            0xD8 => { // rc
+            0xD8 => {
+                // rc
                 if self.cy {
                     self.pc = bus.mem_get16_reverse(self.sp);
                     self.sp += 2;
                 }
             }
-            0xD0 => { // rnc
+            0xD0 => {
+                // rnc
                 if !self.cy {
                     self.pc = bus.mem_get16_reverse(self.sp);
                     self.sp += 2;
                 }
             }
-            0xC8 => { // rz
+            0xC8 => {
+                // rz
                 if self.z {
                     self.pc = bus.mem_get16_reverse(self.sp);
                     self.sp += 2;
                 }
             }
-            0xC0 => { // rnz
+            0xC0 => {
+                // rnz
                 if !self.z {
                     self.pc = bus.mem_get16_reverse(self.sp);
                     self.sp += 2;
                 }
             }
-            0xF0 => { //rp
+            0xF0 => {
+                //rp
                 if !self.s {
                     self.pc = bus.mem_get16_reverse(self.sp);
                     self.sp += 2;
                 }
             }
-            0xF8 => { // rm
+            0xF8 => {
+                // rm
                 if self.s {
                     self.pc = bus.mem_get16_reverse(self.sp);
                     self.sp += 2;
                 }
             }
-            0xE8 => { // rpe
+            0xE8 => {
+                // rpe
                 if self.p {
                     self.pc = bus.mem_get16_reverse(self.sp);
                     self.sp += 2;
                 }
             }
-            0xE0 => { // rpo
+            0xE0 => {
+                // rpo
                 if !self.p {
                     self.pc = bus.mem_get16_reverse(self.sp);
                     self.sp += 2;
@@ -437,7 +575,9 @@ impl CPU {
             }
             _ => panic!("Instrução não encontrada: {inst:X} / {inst:b}"),
         }
-        if self.sp >= 0xCFFF { self.sp = 0xC000; }
+        if self.sp >= 0xCFFF {
+            self.sp = 0xC000;
+        }
     }
 
     pub(super) fn ana(&mut self, bus: &mut Bus, inst: u8) {
@@ -464,8 +604,7 @@ impl CPU {
         if self.a == self.get_reg(bus, which) {
             self.cy = false;
             self.z = true;
-        }
-        else {
+        } else {
             self.cy = false;
             self.z = false;
         }
@@ -495,8 +634,7 @@ impl CPU {
         if self.a == immediate {
             self.cy = false;
             self.z = true;
-        }
-        else {
+        } else {
             self.cy = false;
             self.z = false;
         }
@@ -514,7 +652,5 @@ impl CPU {
         self.cy = !self.cy;
     }
 
-    pub(super) fn nop(&self) {
-    }
-
+    pub(super) fn nop(&self) {}
 }
