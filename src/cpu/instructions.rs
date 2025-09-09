@@ -1,6 +1,5 @@
 use crate::bus::Bus;
 use super::CPU;
-use crate::bus::Bus;
 
 #[allow(dead_code, unused_variables)]
 impl CPU {
@@ -88,6 +87,7 @@ impl CPU {
         self.update_s(self.a);
         self.update_z(self.a);
         self.update_p(self.a);
+        self.ac = (self.a & 0x0F) < (prev_a & 0x0F);
         self.cy = self.a < prev_a;
     }
 
@@ -99,36 +99,86 @@ impl CPU {
         self.update_s(self.a);
         self.update_z(self.a);
         self.update_p(self.a);
+        self.ac = (self.a & 0x0F) < (prev_a & 0x0F);
         self.cy = self.a < prev_a;
     }
 
     pub(super) fn adi(&mut self, bus: &mut Bus) {
-        let value = bus.mem_get8(self.pc + 1);
+        let value = self.fetch8(bus);
         let prev_a = self.a;
         self.a = prev_a + value;
         self.update_s(self.a);
         self.update_z(self.a);
         self.update_p(self.a);
+        self.ac = (self.a & 0x0F) < (prev_a & 0x0F);
         self.cy = self.a < prev_a;
     }
 
     pub(super) fn aci(&mut self, bus: &mut Bus) {
-        let value = bus.mem_get8(self.pc + 1);
+        let value = self.fetch8(bus);
         let prev_a = self.a;
         self.a = prev_a + value + self.cy as u8;
         self.update_s(self.a);
         self.update_z(self.a);
         self.update_p(self.a);
+        self.ac = (self.a & 0x0F) < (prev_a & 0x0F);
         self.cy = self.a < prev_a;
     }
 
     pub(super) fn dad(&mut self, inst: u8) {
         let s = (inst >> 4) & 0x03;
         let value = self.get_reg_pair(s);
-        let prev_hl = self.get_reg_pair(2);
-        self.set_reg_pair(2, prev_hl + value);
-        let cur_hl = self.get_reg_pair(2);
+        let prev_hl = (self.h << 8) as u16 | self.l as u16;
+        let cur_hl = prev_hl + value;
+        self.h = (value >> 8) as u8;
+        self.l = value as u8;
         self.cy = cur_hl < prev_hl;
+    }
+
+    pub(super) fn sub(&mut self, inst: u8) {
+        let s = inst & 0x03;
+        let value = self.get_reg(s);
+        let prev_a = self.a;
+        self.a = prev_a - value;
+        self.update_s(self.a);
+        self.update_z(self.a);
+        self.update_p(self.a);
+        self.ac = (value & 0x0F) > (prev_a & 0x0F);
+        self.cy = value > prev_a;
+    }
+
+    pub(super) fn sbb(&mut self, inst: u8) {
+        let s = inst & 0x03;
+        let value = self.get_reg(s) + self.cy as u8;
+        let prev_a = self.a;
+        self.a = prev_a - value;
+        self.update_s(self.a);
+        self.update_z(self.a);
+        self.update_p(self.a);
+        self.ac = (value & 0x0F) > (prev_a & 0x0F);
+        self.cy = value > prev_a;
+    }
+
+    pub(super) fn sui(&mut self, bus: &mut Bus) {
+        let value = self.fetch8(bus);
+        let prev_a = self.a;
+        self.a = prev_a - value;
+        self.update_s(self.a);
+        self.update_z(self.a);
+        self.update_p(self.a);
+        self.ac = (value & 0x0F) > (prev_a & 0x0F);
+        self.cy = value > prev_a;
+    }
+
+    pub(super) fn sbi(&mut self, bus: &mut Bus) {
+        let value = self.fetch8(bus) + self.cy as u8;
+        let prev_a = self.a;
+        self.a = prev_a - value;
+        self.update_s(self.a);
+        self.update_z(self.a);
+        self.update_p(self.a);
+        self.ac = (value & 0x0F) > (prev_a & 0x0F);
+        self.cy = value > prev_a;
     }
 
     pub(super) fn push(&mut self, inst: u8, bus: &mut Bus) {
