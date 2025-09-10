@@ -73,11 +73,11 @@ impl Bus {
         self.io.print();
     }
 
-    pub fn get8(&self, pos:u8) -> u8 {
+    pub fn io_get8(&self, pos:u8) -> u8 {
         self.io.get8(pos)
     }
 
-    pub fn get16(&self, pos:u8) -> u16 {
+    pub fn io_get16(&self, pos:u8) -> u16 {
         self.io.get16(pos)
     }
 
