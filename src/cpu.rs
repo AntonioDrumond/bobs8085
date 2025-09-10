@@ -15,7 +15,7 @@ enum Target {
 }
 
 #[derive(Default, Debug)]
-#[allow(dead_code, unused_variables)]
+#[allow(dead_code, unused_variables, clippy::upper_case_acronyms)]
 pub struct CPU {
     a: u8, // Accumulator
     b: u8, // Pair BC
@@ -214,7 +214,7 @@ impl CPU {
             0x00 => self.nop(),
             0x20 => todo!("RIM"),
             0x30 => todo!("SIM"),
-            _ => panic!("Instrução não identificada: {:02X}", inst),
+            _ => panic!("Instrução não identificada: {inst:02X}"),
         }
     }
 }

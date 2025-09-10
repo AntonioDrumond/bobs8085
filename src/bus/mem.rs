@@ -42,8 +42,8 @@ impl Memory {
         let mut str = String::default();
 
         while i < self.arr.len()-1 {
-            let slice = &self.arr[i..i+16.min(&self.arr.len()-i)];
-            let line = format!("{:04X} => {:02X?}\n", i, slice);
+            let slice = &self.arr[i..i+16.min(self.arr.len()-i)];
+            let line = format!("{i:04X} => {slice:02X?}\n");
             str.push_str(&line);
             i += 16;
         }
@@ -65,7 +65,7 @@ impl Memory {
         let mut file = File::open(filename)?;
         let mut i = 0;
         while i < self.arr.len()-1 {
-            file.read(&mut self.arr[i..i+8])?;
+            file.read_exact(&mut self.arr[i..i+8])?;
             i+=16;
         }
         Ok(())

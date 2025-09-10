@@ -24,23 +24,21 @@ impl CPU {
 
     pub(super) fn stax(&mut self, bus: &mut Bus, inst: u8) {
         let s = (inst >> 4) & 1;
-        let addr: u16;
-        if s == 0 {
-            addr = (self.b as u16) << 8 | self.c as u16;
+        let addr: u16 = if s == 0 {
+            (self.b as u16) << 8 | self.c as u16
         } else {
-            addr = (self.d as u16) << 8 | self.c as u16;
-        }
+            (self.d as u16) << 8 | self.c as u16
+        };
         bus.mem_set8(addr, self.a);
     }
 
     pub(super) fn ldax(&mut self, bus: &mut Bus, inst: u8) {
         let s = (inst >> 4) & 1;
-        let addr: u16;
-        if s == 0 {
-            addr = (self.b as u16) << 8 | self.c as u16;
+        let addr: u16 = if s == 0 {
+            (self.b as u16) << 8 | self.c as u16
         } else {
-            addr = (self.d as u16) << 8 | self.c as u16;
-        }
+            (self.d as u16) << 8 | self.c as u16
+        };
         let value = bus.mem_get8(addr);
         self.a = value;
     }
