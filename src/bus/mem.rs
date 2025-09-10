@@ -36,7 +36,6 @@ impl Memory {
     }
 
     pub fn write_file(&self, filename:&str) -> std::io::Result<()> {
-
         let mut file = File::create(filename)?;
         let mut i = 0;
         let mut str = String::default();

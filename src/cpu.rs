@@ -157,10 +157,12 @@ impl CPU {
         }
     }
 
-    pub fn execute(&mut self, inst: u8, bus: &mut Bus) {
+    pub fn execute(&mut self, bus: &mut Bus) -> bool {
+        if self.pc >= 0xD000 { return false; }
+        let inst = bus.mem_get8(self.pc);
         self.pc += 1;
         match inst {
-            0x76 => todo!("HLT"),
+            0x76 => return false,
             0x40..=0x7F => self.mov(bus, inst),
             0x06 | 0x0E | 0x16 | 0x1E | 0x26 | 0x2E | 0x36 | 0x3E => self.mvi(bus, inst),
             0x01 | 0x11 | 0x21 => self.lxi(bus, inst),
@@ -215,6 +217,7 @@ impl CPU {
             0x20 => todo!("RIM"),
             0x30 => todo!("SIM"),
             _ => panic!("Instrução não identificada: {inst:02X}"),
-        }
+        };
+        true
     }
 }

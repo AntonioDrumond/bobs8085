@@ -18,6 +18,11 @@ impl Default for Bus {
 
 #[allow(dead_code, unused_variables)]
 impl Bus {
+    
+    pub fn from_file(filename: &str) -> Bus {
+        todo!("Create bus from memory file");
+    }
+
     pub fn new() -> Bus {
         Bus { mem: Memory::default(), io: Io::default() }
     }
@@ -95,6 +100,11 @@ impl Bus {
 
     pub fn io_set16_reverse(&mut self, pos:u8, value:u16) {
         self.io.set16_reverse(pos, value);
+    }
+
+    pub fn io_write_file(&self, filename:&str) -> std::io::Result<()> {
+        self.io.write_file(filename)?;
+        Ok(())
     }
 
 }
