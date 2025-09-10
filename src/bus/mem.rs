@@ -27,9 +27,17 @@ impl Memory {
         }
     }
 
-    pub fn write_file(&self) -> std::io::Result<()> {
+    pub fn print_program(&self) {
+        let mut i = 0xC000;
+        while i < 0xCFFF {
+            println!("{:04X} => {:02X?}", i, &self.arr[i..i+16]);
+            i += 16;
+        }
+    }
 
-        let mut file = File::create("memory.bin")?;
+    pub fn write_file(&self, filename:&str) -> std::io::Result<()> {
+
+        let mut file = File::create(filename)?;
         let mut i = 0;
         let mut str = String::default();
 
@@ -43,12 +51,22 @@ impl Memory {
         Ok(())
     }
 
-    pub fn dump(&self) -> std::io::Result<()> {
-        let mut file = File::create("memory.bin")?;
+    pub fn dump(&self, filename:&str) -> std::io::Result<()> {
+        let mut file = File::create(filename)?;
         let mut i = 0;
         while i < self.arr.len()-1 {
             file.write_all(&self.arr[i..i+16])?;
             i += 16;
+        }
+        Ok(())
+    }
+    
+    pub fn read_dump(&mut self, filename:&str) -> std::io::Result<()> {
+        let mut file = File::open(filename)?;
+        let mut i = 0;
+        while i < self.arr.len()-1 {
+            file.read(&mut self.arr[i..i+8])?;
+            i+=16;
         }
         Ok(())
     }
