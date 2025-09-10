@@ -686,4 +686,15 @@ impl CPU {
     }
 
     pub(super) fn nop(&self) {}
+
+    pub(super) fn io_in(&mut self, bus: &Bus) {
+        let addr = self.fetch8(bus);
+        self.a = bus.io_get8(addr);
+    }
+
+    pub(super) fn io_out(&mut self, bus: &mut Bus) {
+        let addr = self.fetch8(bus);
+        bus.io_set8(addr, self.a);
+    }
+
 }

@@ -68,4 +68,33 @@ impl Bus {
     pub fn mem_print_program(&self) {
         self.mem.print_program();
     }
+
+    pub fn io_print(&self) {
+        self.io.print();
+    }
+
+    pub fn io_get8(&self, pos:u8) -> u8 {
+        self.io.get8(pos)
+    }
+
+    pub fn io_get16(&self, pos:u8) -> u16 {
+        self.io.get16(pos)
+    }
+
+    pub fn io_get16_reverse(&self, pos:u8) -> u16 {
+        self.io.get16_reverse(pos)
+    }
+
+    pub fn io_set8(&mut self, pos:u8, value:u8) {
+        self.io.set8(pos, value);
+    }
+
+    pub fn io_set16(&mut self, pos:u8, value:u16) {
+        self.io.set16(pos, value);
+    }
+
+    pub fn io_set16_reverse(&mut self, pos:u8, value:u16) {
+        self.io.set16_reverse(pos, value);
+    }
+
 }
