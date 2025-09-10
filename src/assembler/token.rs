@@ -3,7 +3,8 @@ use std::fmt;
 pub(super) enum TokenType {
     Instruction,
     Register,
-    Address,
+    Value,
+    Label,
     Comma,
     NewLine,
 }
@@ -13,7 +14,8 @@ impl fmt::Display for TokenType {
         match self {
             TokenType::Instruction => write!(f, "INSTRUCTION"),
             TokenType::Register => write!(f, "REGISTER"),
-            TokenType::Address => write!(f, "ADDRESS"),
+            TokenType::Value => write!(f, "VALUE"),
+            TokenType::Label => write!(f, "LABLE"),
             TokenType::Comma => write!(f, "COMMA"),
             TokenType::NewLine => write!(f, "NEW_LINE"),
         }
@@ -30,7 +32,7 @@ impl fmt::Debug for Token {
         write!(f, "{}", self.token_type.to_string())?;
         if matches!(
             self.token_type,
-            TokenType::Instruction | TokenType::Register | TokenType::Address
+            TokenType::Instruction | TokenType::Register | TokenType::Value
         ) {
             write!(f, "({})", self.content)?;
         }
@@ -54,9 +56,16 @@ impl Token {
         }
     }
 
-    pub(super) fn address(content: &str) -> Self {
+    pub(super) fn value(content: &str) -> Self {
         Token {
-            token_type: TokenType::Address,
+            token_type: TokenType::Value,
+            content: content.to_owned(),
+        }
+    }
+
+    pub(super) fn label(content: &str) -> Self {
+        Token {
+            token_type: TokenType::Label,
             content: content.to_owned(),
         }
     }

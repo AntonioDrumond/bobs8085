@@ -5,7 +5,7 @@ mod cpu;
 use assembler::assemble;
 
 fn main() {
-    match assemble("test/code.asm", "b") {
+    match assemble("test/test4.asm", "b") {
         Ok(()) => println!("OK!"),
         Err(error) => panic!("HERES Y UR DUMB: {error:?}"),
     }

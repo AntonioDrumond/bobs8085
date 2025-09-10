@@ -13,21 +13,24 @@ fn str_to_tok(str: &str) -> Option<Box<Token>> {
             if char == ',' {
                 return Some(Box::new(Token::comma()));
             } else if char.is_alphabetic() {
-                return Some(Box::new(Token::register(&char.to_string())))
+                return Some(Box::new(Token::register(&char.to_string())));
             } else if char.is_numeric() {
-                return Some(Box::new(Token::address(&char.to_string())))
+                return Some(Box::new(Token::value(&char.to_string())));
             }
             return None;
         } else {
             unreachable!();
         }
     }
+    if str.starts_with('.') {
+        return Some(Box::new(Token::label(&String::from(str))));
+    }
     for char in chars {
-        if char.is_alphabetic() {
-            return Some(Box::new(Token::instruction(&String::from(str))))
+        if char.is_numeric() {
+            return Some(Box::new(Token::value(&String::from(str))));
         }
     }
-    Some(Box::new(Token::address(&String::from(str))))
+    Some(Box::new(Token::instruction(&String::from(str))))
 }
 
 pub(super) fn tokenize(buff: &str) -> Vec<Box<Token>> {
@@ -50,7 +53,7 @@ pub(super) fn tokenize(buff: &str) -> Vec<Box<Token>> {
                     str.clear();
                 }
                 tokens.push(Box::new(Token::comma()));
-            } else if c == ';' {
+            } else if c == ';' || c == '/' {
                 break;
             } else {
                 str.push(c);
