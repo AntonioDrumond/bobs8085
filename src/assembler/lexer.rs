@@ -7,64 +7,47 @@ use super::token::Token;
  */
 
 fn str_to_tok(str: &str) -> Option<Box<Token>> {
-    let mut chars = str.chars();
-    if str.len() == 1 {
-        if let Some(char) = chars.nth(0) {
-            if char == ',' {
-                return Some(Box::new(Token::comma()));
-            } else if char.is_alphabetic() {
-                return Some(Box::new(Token::register(&char.to_string())));
-            } else if char.is_numeric() {
-                return Some(Box::new(Token::value(&char.to_string())));
+    let first = str.chars().next()?;
+    let tok = match first {
+        ',' => Token::comma(),
+        '.' => Token::label(str),
+        c if c.is_alphabetic() && str.len() == 1 => Token::register(str),
+        _ => {
+            if str.chars().any(|c| c.is_numeric()) {
+                Token::value(str)
+            } else {
+                Token::instruction(str)
             }
-            return None;
-        } else {
-            unreachable!();
         }
-    }
-    if str.starts_with('.') {
-        return Some(Box::new(Token::label(&String::from(str))));
-    }
-    for char in chars {
-        if char.is_numeric() {
-            return Some(Box::new(Token::value(&String::from(str))));
-        }
-    }
-    Some(Box::new(Token::instruction(&String::from(str))))
+    };
+    Some(Box::new(tok))
 }
 
-pub(super) fn tokenize(buff: &str) -> Vec<Box<Token>> {
+fn try_add_token(buf: &mut String, tokens: &mut Vec<Box<Token>>) {
+    if !buf.is_empty() {
+        if let Some(tok) = str_to_tok(&buf) {
+            tokens.push(tok);
+        }
+        buf.clear();
+    }
+}
+
+pub(super) fn tokenize(buffer: &str) -> Vec<Box<Token>> {
     let mut tokens: Vec<Box<Token>> = Vec::new();
-    let mut str = String::new();
-    for line in buff.lines() {
+    let mut buf = String::new();
+    for line in buffer.lines() {
         for c in line.chars() {
-            if c.is_whitespace() || c.is_control() {
-                if !str.is_empty() {
-                    if let Some(tok) = str_to_tok(&str) {
-                        tokens.push(tok);
-                    }
-                    str.clear();
+            match c {
+                ';' | '/' => break,
+                ',' => {
+                    try_add_token(&mut buf, &mut tokens);
+                    tokens.push(Box::new(Token::comma()));
                 }
-            } else if c == ',' {
-                if !str.is_empty() {
-                    if let Some(tok) = str_to_tok(&str) {
-                        tokens.push(tok);
-                    }
-                    str.clear();
-                }
-                tokens.push(Box::new(Token::comma()));
-            } else if c == ';' || c == '/' {
-                break;
-            } else {
-                str.push(c);
+                c if c.is_whitespace() => try_add_token(&mut buf, &mut tokens),
+                _ => buf.push(c),
             }
         }
-        if !str.is_empty() {
-            if let Some(tok) = str_to_tok(&str) {
-                tokens.push(tok);
-            }
-            str.clear();
-        }
+        try_add_token(&mut buf, &mut tokens);
         tokens.push(Box::new(Token::new_line()));
     }
     tokens

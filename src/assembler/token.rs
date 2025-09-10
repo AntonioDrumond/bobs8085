@@ -32,7 +32,7 @@ impl fmt::Debug for Token {
         write!(f, "{}", self.token_type.to_string())?;
         if matches!(
             self.token_type,
-            TokenType::Instruction | TokenType::Register | TokenType::Value
+            TokenType::Instruction | TokenType::Register | TokenType::Value | TokenType::Label
         ) {
             write!(f, "({})", self.content)?;
         }
