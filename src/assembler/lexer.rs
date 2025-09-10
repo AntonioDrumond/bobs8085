@@ -8,6 +8,9 @@ use super::token::Token;
 
 fn str_to_tok(str: &str) -> Option<Box<Token>> {
     let first = str.chars().next()?;
+    if first == '/' {
+        return None;
+    }
     let tok = match first {
         ',' => Token::comma(),
         '.' => Token::label(str),
@@ -38,7 +41,15 @@ pub(super) fn tokenize(buffer: &str) -> Vec<Box<Token>> {
     for line in buffer.lines() {
         for c in line.chars() {
             match c {
-                ';' | '/' => break,
+                ';' => break,
+                '/' => {
+                    if buf.starts_with('/') {
+                        break;
+                    } else {
+                        try_add_token(&mut buf, &mut tokens);
+                        buf.push(c);
+                    }
+                }
                 ',' => {
                     try_add_token(&mut buf, &mut tokens);
                     tokens.push(Box::new(Token::comma()));
