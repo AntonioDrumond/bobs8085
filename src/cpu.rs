@@ -208,7 +208,7 @@ impl CPU {
             0x2F => self.cma(),
             0x37 => self.stc(),
             0x3F => self.cmc(),
-            0x27 => todo!("DAA"),
+            0x27 => self.daa(),
             0xFB => todo!("EI"),
             0xF3 => todo!("DI"),
             0x00 => self.nop(),

@@ -248,6 +248,30 @@ impl CPU {
         self.cy = value > prev_a;
     }
 
+    pub(super) fn daa(&mut self) {
+
+        let prev_a = self.a;
+        let lo = prev_a & 0xF;
+
+        if lo > 0x9 || self.ac {
+            self.a += 0x6;
+        }
+
+        self.ac = (self.a & 0x0F) < (prev_a & 0x0F);
+        self.cy = self.cy || (self.a < prev_a);
+
+        let hi = (self.a >> 4) & 0xF;
+
+        if hi > 0x9 || self.cy {
+            self.a += 0x60;
+            self.cy = true;
+        }
+
+        self.update_s(self.a);
+        self.update_z(self.a);
+        self.update_p(self.a);
+    }
+
     pub(super) fn push(&mut self, inst: u8, bus: &mut Bus) {
         if self.sp <= 0xC000 {
             self.sp = 0xD000;
