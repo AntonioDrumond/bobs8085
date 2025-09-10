@@ -24,23 +24,21 @@ impl CPU {
 
     pub(super) fn stax(&mut self, bus: &mut Bus, inst: u8) {
         let s = (inst >> 4) & 1;
-        let addr: u16;
-        if s == 0 {
-            addr = (self.b as u16) << 8 | self.c as u16;
+        let addr: u16 = if s == 0 {
+            (self.b as u16) << 8 | self.c as u16
         } else {
-            addr = (self.d as u16) << 8 | self.c as u16;
-        }
+            (self.d as u16) << 8 | self.c as u16
+        };
         bus.mem_set8(addr, self.a);
     }
 
     pub(super) fn ldax(&mut self, bus: &mut Bus, inst: u8) {
         let s = (inst >> 4) & 1;
-        let addr: u16;
-        if s == 0 {
-            addr = (self.b as u16) << 8 | self.c as u16;
+        let addr: u16 = if s == 0 {
+            (self.b as u16) << 8 | self.c as u16
         } else {
-            addr = (self.d as u16) << 8 | self.c as u16;
-        }
+            (self.d as u16) << 8 | self.c as u16
+        };
         let value = bus.mem_get8(addr);
         self.a = value;
     }
@@ -454,14 +452,9 @@ impl CPU {
         match inst {
             0xCD => {
                 // call
-                println!("pc b4 = {:X}", self.pc);
                 self.sp -= 2;
                 bus.mem_set16_reverse(self.sp, self.pc + 2);
-                let var = self.fetch16(bus);
-                self.pc = var;
-                println!("fetch = {:X}", var);
-                // self.pc = self.fetch16(bus);
-                println!("pc aft = {:X}", self.pc);
+                self.pc = self.fetch16(bus);
             }
             0xDC => {
                 // cc
@@ -602,6 +595,20 @@ impl CPU {
         if self.sp >= 0xCFFF {
             self.sp = 0xC000;
         }
+    }
+
+    pub(super) fn rst(&mut self, inst: u8, bus: &mut Bus) {
+        if self.sp <= 0xC000 {
+            self.sp = 0xD000;
+        }
+
+        let value = (inst >> 3) & 0x7;
+
+        self.sp -= 2;
+        bus.mem_set16_reverse(self.sp, self.pc + 2);
+
+        self.pc =(value as u16) << 3;
+        println!("pc = {}", self.pc);
     }
 
     pub(super) fn ana(&mut self, bus: &mut Bus, inst: u8) {
