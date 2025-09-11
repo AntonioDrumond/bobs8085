@@ -21,31 +21,70 @@ enum State {
 pub(super) fn parse(tokens: Vec<Box<Token>>) -> Result<(), ParserError> {
     let mut state_queue: VecDeque<State> = VecDeque::from([State::Search]);
     let mut buffer: Vec<u8> = Vec::default();
-    let mut opcode: u8 = 0;
+    let mut next_mc: u16 = 0;
     for token in tokens {
         if let Some(state) = state_queue.pop_front() {
             match state {
                 State::Search => match token.get_token_type() {
                     TokenType::Instruction => {
                         if let (op, Some(states)) = encode_inst(token.get_content())? {
-                            opcode = op;
+                            next_mc = op as u16;
                             state_queue.extend(states);
                         }
                     }
                     TokenType::Label => todo!("labels are yet to be supported"),
                     _ => return Err(ParserError::UnknownName),
                 },
-                State::Arg30 => encode_arg3(token.get_content()).map(|value| opcode |= value)?,
+                State::Arg30 => {
+                    match token.get_token_type() {
+                        TokenType::Register =>  {
+                            let value = encode_arg3(token.get_content())?;
+                            next_mc |= value as u16;
+                        }
+                        _ => return Err(ParserError::InvalidInstructionArgument)
+                    }
+                }
                 State::Arg33 => {
-                    encode_arg3(token.get_content()).map(|value| opcode |= value << 3)?
+                    match token.get_token_type() {
+                        TokenType::Register => { 
+                            let value = encode_arg3(token.get_content())?; 
+                            next_mc |= (value << 3) as u16; 
+                        }
+                        _ => return Err(ParserError::InvalidInstructionArgument)
+                    }
                 }
                 State::Arg24 => {
-                    encode_arg2(token.get_content()).map(|value| opcode |= value << 4)?
+                    match token.get_token_type() {
+                        TokenType::Register => { 
+                            let value = encode_arg2(token.get_content())?; 
+                            next_mc |= (value << 4) as u16; 
+                        }
+                        _ => return Err(ParserError::InvalidInstructionArgument)
+                    }
                 }
-                State::Immediate => todo!("immediates are yet to be supported"),
+                State::Immediate => {
+                    let value = token.get_content();
+                    if(value.starts_with("0x") && value.ends_with('h')) {
+                        return Err(ParserError::InvalidValueFormat)
+                    }
+                    let trimmed = value.trim_start_matches("0x").trim_start_matches('0').trim_end_matches('h');
+                    if value.len() > 4 || value.len() == 0 {
+                        return Err(ParserError::InvalidValueFormat)
+                    }
+                    next_mc = u16::from_str_radix(trimmed, 16).map_err(|_| ParserError::InvalidValueFormat)?;
+                }
             }
-        } else {
-        }
+
+            if state_queue.is_empty() {
+                if next_mc < 0x0100 {
+                    buffer.push(next_mc as u8);
+                } else {
+                    buffer.push(next_mc as u8);
+                    buffer.push((next_mc >> 8) as u8);
+                }
+                state_queue.push_back(State::Search);
+            }
+        } 
     }
     Ok(())
 }
