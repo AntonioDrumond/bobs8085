@@ -24,23 +24,21 @@ impl CPU {
 
     pub(super) fn stax(&mut self, bus: &mut Bus, inst: u8) {
         let s = (inst >> 4) & 1;
-        let addr: u16;
-        if s == 0 {
-            addr = (self.b as u16) << 8 | self.c as u16;
+        let addr: u16 = if s == 0 {
+            (self.b as u16) << 8 | self.c as u16
         } else {
-            addr = (self.d as u16) << 8 | self.c as u16;
-        }
+            (self.d as u16) << 8 | self.c as u16
+        };
         bus.mem_set8(addr, self.a);
     }
 
     pub(super) fn ldax(&mut self, bus: &mut Bus, inst: u8) {
         let s = (inst >> 4) & 1;
-        let addr: u16;
-        if s == 0 {
-            addr = (self.b as u16) << 8 | self.c as u16;
+        let addr: u16 = if s == 0 {
+            (self.b as u16) << 8 | self.c as u16
         } else {
-            addr = (self.d as u16) << 8 | self.c as u16;
-        }
+            (self.d as u16) << 8 | self.c as u16
+        };
         let value = bus.mem_get8(addr);
         self.a = value;
     }
@@ -248,6 +246,30 @@ impl CPU {
         self.cy = value > prev_a;
     }
 
+    pub(super) fn daa(&mut self) {
+
+        let prev_a = self.a;
+        let lo = prev_a & 0xF;
+
+        if lo > 0x9 || self.ac {
+            self.a += 0x6;
+        }
+
+        self.ac = (self.a & 0x0F) < (prev_a & 0x0F);
+        self.cy = self.cy || (self.a < prev_a);
+
+        let hi = (self.a >> 4) & 0xF;
+
+        if hi > 0x9 || self.cy {
+            self.a += 0x60;
+            self.cy = true;
+        }
+
+        self.update_s(self.a);
+        self.update_z(self.a);
+        self.update_p(self.a);
+    }
+
     pub(super) fn push(&mut self, inst: u8, bus: &mut Bus) {
         if self.sp <= 0xC000 {
             self.sp = 0xD000;
@@ -430,14 +452,9 @@ impl CPU {
         match inst {
             0xCD => {
                 // call
-                println!("pc b4 = {:X}", self.pc);
                 self.sp -= 2;
                 bus.mem_set16_reverse(self.sp, self.pc + 2);
-                let var = self.fetch16(bus);
-                self.pc = var;
-                println!("fetch = {:X}", var);
-                // self.pc = self.fetch16(bus);
-                println!("pc aft = {:X}", self.pc);
+                self.pc = self.fetch16(bus);
             }
             0xDC => {
                 // cc
@@ -580,6 +597,20 @@ impl CPU {
         }
     }
 
+    pub(super) fn rst(&mut self, inst: u8, bus: &mut Bus) {
+        if self.sp <= 0xC000 {
+            self.sp = 0xD000;
+        }
+
+        let value = (inst >> 3) & 0x7;
+
+        self.sp -= 2;
+        bus.mem_set16_reverse(self.sp, self.pc + 2);
+
+        self.pc =(value as u16) << 3;
+        println!("pc = {}", self.pc);
+    }
+
     pub(super) fn ana(&mut self, bus: &mut Bus, inst: u8) {
         let which = inst & 0x07;
         self.a &= self.get_reg(bus, which);
@@ -653,4 +684,15 @@ impl CPU {
     }
 
     pub(super) fn nop(&self) {}
+
+    pub(super) fn io_in(&mut self, bus: &Bus) {
+        let addr = self.fetch8(bus);
+        self.a = bus.io_get8(addr);
+    }
+
+    pub(super) fn io_out(&mut self, bus: &mut Bus) {
+        let addr = self.fetch8(bus);
+        bus.io_set8(addr, self.a);
+    }
+
 }

@@ -15,7 +15,7 @@ enum Target {
 }
 
 #[derive(Default, Debug)]
-#[allow(dead_code, unused_variables)]
+#[allow(dead_code, unused_variables, clippy::upper_case_acronyms)]
 pub struct CPU {
     a: u8, // Accumulator
     b: u8, // Pair BC
@@ -157,10 +157,12 @@ impl CPU {
         }
     }
 
-    pub fn execute(&mut self, inst: u8, bus: &mut Bus) {
+    pub fn execute(&mut self, bus: &mut Bus) -> bool {
+        if self.pc >= 0xD000 { return false; }
+        let inst = bus.mem_get8(self.pc);
         self.pc += 1;
         match inst {
-            0x76 => todo!("HLT"),
+            0x76 => return false,
             0x40..=0x7F => self.mov(bus, inst),
             0x06 | 0x0E | 0x16 | 0x1E | 0x26 | 0x2E | 0x36 | 0x3E => self.mvi(bus, inst),
             0x01 | 0x11 | 0x21 => self.lxi(bus, inst),
@@ -181,9 +183,9 @@ impl CPU {
             0xE9 => self.pchl(),
             0xCD | 0xDC | 0xD4 | 0xCC | 0xC4 | 0xF4 | 0xFC | 0xEC | 0xE4 => self.call(inst, bus),
             0xC9 | 0xD8 | 0xD0 | 0xC8 | 0xC0 | 0xF0 | 0xF8 | 0xE8 | 0xE0 => self.ret(inst, bus),
-            0xC7 | 0xCF | 0xD7 | 0xDF | 0xE7 | 0xEF | 0xf7 | 0xFF => todo!("RSTs"),
-            0xDB => todo!("IN"),
-            0xD3 => todo!("OUT"),
+            0xC7 | 0xCF | 0xD7 | 0xDF | 0xE7 | 0xEF | 0xf7 | 0xFF => self.rst(inst, bus),
+            0xDB => self.io_in(bus),
+            0xD3 => self.io_out(bus),
             0x04 | 0x0C | 0x14 | 0x1C | 0x24 | 0x2C | 0x34 | 0x3C => self.inr(bus, inst),
             0x05 | 0x0D | 0x15 | 0x1D | 0x25 | 0x2D | 0x35 | 0x3D => self.dcr(bus, inst),
             0x03 | 0x13 | 0x23 => self.inx(inst),
@@ -208,13 +210,14 @@ impl CPU {
             0x2F => self.cma(),
             0x37 => self.stc(),
             0x3F => self.cmc(),
-            0x27 => todo!("DAA"),
+            0x27 => self.daa(),
             0xFB => todo!("EI"),
             0xF3 => todo!("DI"),
             0x00 => self.nop(),
             0x20 => todo!("RIM"),
             0x30 => todo!("SIM"),
-            _ => panic!("Instrução não identificada: {:02X}", inst),
-        }
+            _ => panic!("Instrução não identificada: {inst:02X}"),
+        };
+        true
     }
 }
