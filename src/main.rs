@@ -36,26 +36,6 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
 
 fn main() {
     // utils::clear();
-    {
-//          let mut mem = Mem::default();
-        let mut bus = Bus::default();
-        bus.mem_set16(0xC000, 0x3E01);
-        bus.mem_set16(0xC002, 0x3250);
-        bus.mem_set16(0xC004, 0xC032);
-        bus.mem_set16(0xC006, 0x51C0);
-        bus.mem_set16(0xC008, 0x3E00);
-        bus.mem_set16(0xC00A, 0x0E09);
-        bus.mem_set16(0xC00C, 0x2150);
-        bus.mem_set16(0xC00E, 0xC07E);
-        bus.mem_set16(0xC010, 0x2346);
-        bus.mem_set16(0xC012, 0x2380);
-        bus.mem_set16(0xC014, 0x2777);
-        bus.mem_set16(0xC016, 0x2B0D);
-        bus.mem_set16(0xC018, 0xC20F);
-        bus.mem_set16(0xC01A, 0xC076);
-        bus.mem_dump("test.bin");
-        bus.mem_write_file("out");
-    }
     loop {
         let word = input!("> $ ");
         let cmd = word.as_str().split_whitespace().collect::<Vec<_>>();
