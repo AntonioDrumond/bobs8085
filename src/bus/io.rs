@@ -1,3 +1,6 @@
+use std::fs::File;
+use std::io::prelude::*;
+
 #[allow(dead_code, unused_variables)]
 #[derive(Debug)]
 pub struct Io{ 
@@ -34,6 +37,21 @@ impl Io {
 
     pub fn get16_reverse(&self, pos:u8) -> u16 {
         (self.arr[pos as usize + 1] as u16) << 8 | self.arr[pos as usize] as u16
+    }
+
+    pub fn write_file(&self, filename:&str) -> std::io::Result<()> {
+        let mut file = File::create(filename)?;
+        let mut i = 0;
+        let mut str = String::default();
+
+        while i < self.arr.len()-1 {
+            let slice = &self.arr[i..i+16.min(self.arr.len()-i)];
+            let line = format!("{i:04X} => {slice:02X?}\n");
+            str.push_str(&line);
+            i += 16;
+        }
+        file.write_all(str.as_bytes())?;
+        Ok(())
     }
 
     pub fn set8(&mut self, pos:u8, value:u8) {
