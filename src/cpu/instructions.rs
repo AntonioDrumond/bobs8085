@@ -86,25 +86,23 @@ impl CPU {
         let value = self.get_reg(bus, d);
         let res = value.wrapping_sub(1);
         self.set_reg(bus, d, res);
-        if (res == 0)
-        {
-            self.z = true;
+
+        match res {
+            0 => self.z = true,
+            _ => self.z = false,
         }
-        else
-        {
-            self.z = false;
-        }
-        if (value == 0)
-        {
-            self.s = true;
-            self.ac = true;
-            self.cy = true;
-        }
-        else
-        {
-            self.s = false;
-            self.ac = false;
-            self.cy = false;
+
+        match value {
+            0 => {
+                self.s = true;
+                self.ac = true;
+                self.cy = true;
+            },
+            _ => {
+                self.s = false;
+                self.ac = false;
+                self.cy = false;
+            }
         }
     }
 

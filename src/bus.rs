@@ -56,6 +56,14 @@ impl Bus {
         self.mem.set16_reverse(pos, value);
     }
 
+    pub fn mem_clone(&self) -> Memory {
+        self.mem.clone()
+    }
+
+    pub fn mem_diff(&self, other:Memory) -> Vec<(u16, u8)> {
+        self.mem.diff(other)
+    }
+
     pub fn mem_dump(&self, filename:&str) -> std::io::Result<()> {
         self.mem.dump(filename)?;
         Ok(())

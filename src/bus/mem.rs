@@ -19,6 +19,25 @@ impl Memory {
         Memory { arr: vec![0; 0xFFFF+2] }
     }
 
+    pub fn clone(&self) -> Memory {
+        Memory { arr: self.arr.clone() }
+    }
+    
+    pub fn diff(&self, other:Memory) -> Vec<(u16, u8)> {
+        
+        let mut changes: Vec<(u16, u8)> = vec![];
+        let mut j : u16 = 0;
+
+        for i in &self.arr {
+            if *i != other.arr[j as usize]
+            {
+                changes.push((j, *i));
+            }
+            j = j.wrapping_add(1);
+        }
+        changes
+    }
+
     pub fn print(&self) {
         let mut i = 0;
         while i < self.arr.len()-1 {

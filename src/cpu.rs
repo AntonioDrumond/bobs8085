@@ -1,25 +1,16 @@
 mod instructions;
+mod changes;
 
 use crate::bus::Bus;
+use crate::changes::*;
 
-#[allow(dead_code)]
-enum Target {
-    A,
-    B,
-    C,
-    D,
-    E,
-    H,
-    L,
-    M,
-}
-
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 #[allow(dead_code, unused_variables, clippy::upper_case_acronyms)]
 pub struct CPU {
     a: u8, // Accumulator
     b: u8, // Pair BC
     c: u8,
+
     d: u8, // Pair DE
     e: u8,
     h: u8, // Pair HL
@@ -154,6 +145,34 @@ impl CPU {
                 self.p = !self.p;
             }
             i <<= 1;
+        }
+    }
+
+    fn diff (&self, other:CPU) -> vec<CPU_E> {
+        if self.a != other.a {
+            CPU_E.registers.push(A, self.a);
+        }
+        if self.b != other.b {
+            CPU_E.registers.push(B, self.b);
+        }
+        if self.c != other.c {
+            CPU_E.registers.push(C, self.c);
+        }
+        if self.d != other.d {
+            CPU_E.registers.push(D, self.d);
+        }
+        if self.e != other.e {
+            CPU_E.registers.push(E, self.e);
+        }
+        if self.h != other.h {
+            CPU_E.registers.push(H, self.h);
+        }
+        if self.l != other.l {
+            CPU_E.registers.push(L, self.l);
+        }
+
+        if self.z != other.z {
+            CPU_E.
         }
     }
 

@@ -29,9 +29,35 @@ fn run_all(cpu: &mut CPU, bus: &mut Bus) {
     }
 }
 
-#[allow(unused_variables, dead_code)]
 fn run_step(cpu: &mut CPU, bus: &mut Bus) {
-    todo!("Step by step execution");
+
+    let old = bus.mem_clone();
+    let mem_diff : Vec<(u16, u8)> = bus.mem_diff(old);
+    println!("n = {}", mem_diff.len());
+
+//	    cpu.set_pc(0xC000);
+//	    let mut running = true;
+//	    while running {
+//	        
+//	        let in = input!().to_lowercase();
+//	        match in {
+//	            ">" | "forward" | "f" => (),
+//	            "<" | "backward" | "b" => (),
+//	        }
+//	        running = cpu.execute(bus);
+//	    }
+//	    println!("\nCPU State at end of program:\n");
+//	    cpu.print_state();
+//	    println!("\n");
+//	    match bus.mem_write_file("./memory.txt") {
+//	        Ok(()) => println!("Memory saved to \"./memory.txt\""),
+//	        Err(e) => eprintln!("Error printing memory: {e}"),
+//	    }
+//	    match bus.io_write_file("./io.txt") {
+//	        Ok(()) => println!("IO ports saved to \"./io.txt\""),
+//	        Err(e) => eprintln!("Error printing IO: {e}"),
+//	    }
+
 }
 
 fn main() {
