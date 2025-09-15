@@ -6,38 +6,44 @@ use super::token::Token;
  * No test with control characters were intensively made
  */
 
-fn str_to_tok(str: &str) -> Option<Box<Token>> {
-    let first = str.chars().next()?;
-    if first == '/' {
-        return None;
+fn str_to_tok(str: &str, found_inst: bool) -> (bool, Option<Token>) {
+    if str.chars().next().unwrap() == '/' {
+        return (false, None);
     }
-    let tok = match first {
-        ',' => Token::comma(),
-        '.' => Token::label(str),
-        c if c.is_alphabetic() && str.len() == 1 => Token::register(str),
-        _ => {
-            if str.chars().any(|c| c.is_numeric()) {
-                Token::value(str)
-            } else {
-                Token::instruction(str)
-            }
-        }
+
+    let mut is_inst = false;
+    let tok = if str.len() == 1 {
+        Token::register(str)
+    } else if str.ends_with(':') {
+        Token::label_declr(str)
+    } else if str.chars().any(|c| c.is_numeric()) {
+        Token::value(str)
+    } else if found_inst {
+        Token::label_value(str)
+    } else {
+        is_inst = true;
+        Token::instruction(str)
     };
-    Some(Box::new(tok))
+    
+    (is_inst, Some(tok))
 }
 
-fn try_add_token(buf: &mut String, tokens: &mut Vec<Box<Token>>) {
+fn try_add_token(buf: &mut String, tokens: &mut Vec<Token>, found_inst: bool) -> bool {
     if !buf.is_empty() {
-        if let Some(tok) = str_to_tok(&buf) {
+        let (is_inst, token_opt) = str_to_tok(&buf, found_inst);
+        if let Some(tok) = token_opt {
             tokens.push(tok);
         }
         buf.clear();
+        return is_inst;
     }
+    false
 }
 
-pub(super) fn tokenize(buffer: &str) -> Vec<Box<Token>> {
-    let mut tokens: Vec<Box<Token>> = Vec::new();
+pub fn tokenize(buffer: &str) -> Vec<Token> {
+    let mut tokens: Vec<Token> = Vec::new();
     let mut buf = String::new();
+    let mut found_inst = false;
     for line in buffer.lines() {
         for c in line.chars() {
             match c {
@@ -46,20 +52,20 @@ pub(super) fn tokenize(buffer: &str) -> Vec<Box<Token>> {
                     if buf.starts_with('/') {
                         break;
                     } else {
-                        try_add_token(&mut buf, &mut tokens);
+                        found_inst = try_add_token(&mut buf, &mut tokens, found_inst);
                         buf.push(c);
                     }
                 }
                 ',' => {
-                    try_add_token(&mut buf, &mut tokens);
-                    tokens.push(Box::new(Token::comma()));
+                    found_inst = try_add_token(&mut buf, &mut tokens, found_inst);
+                    tokens.push(Token::comma());
                 }
-                c if c.is_whitespace() => try_add_token(&mut buf, &mut tokens),
+                c if c.is_whitespace() => found_inst = try_add_token(&mut buf, &mut tokens, found_inst),
                 _ => buf.push(c),
             }
         }
-        try_add_token(&mut buf, &mut tokens);
-        tokens.push(Box::new(Token::new_line()));
+        try_add_token(&mut buf, &mut tokens, found_inst);
+        tokens.push(Token::new_line());
     }
     tokens
 }

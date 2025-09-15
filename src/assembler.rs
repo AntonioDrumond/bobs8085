@@ -1,6 +1,6 @@
-mod token;
-mod lexer;
-mod parser;
+pub mod token;
+pub mod lexer;
+pub mod parser;
 
 use std::fs::File;
 use std::io::prelude::*;

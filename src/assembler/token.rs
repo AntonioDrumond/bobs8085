@@ -1,10 +1,12 @@
 use std::fmt;
 
-pub(super) enum TokenType {
+#[derive(Debug)]
+pub enum TokenType {
     Instruction,
     Register,
     Value,
-    Label,
+    LabelDeclaration,
+    LabelValue,
     Comma,
     NewLine,
 }
@@ -15,14 +17,15 @@ impl fmt::Display for TokenType {
             TokenType::Instruction => write!(f, "INSTRUCTION"),
             TokenType::Register => write!(f, "REGISTER"),
             TokenType::Value => write!(f, "VALUE"),
-            TokenType::Label => write!(f, "LABLE"),
+            TokenType::LabelDeclaration => write!(f, "LABEL_DECLARATION"),
+            TokenType::LabelValue => write!(f, "LABEL_VALUE"),
             TokenType::Comma => write!(f, "COMMA"),
             TokenType::NewLine => write!(f, "NEW_LINE"),
         }
     }
 }
 
-pub(super) struct Token {
+pub struct Token {
     token_type: TokenType,
     content: String,
 }
@@ -42,53 +45,58 @@ impl fmt::Debug for Token {
 
 #[allow(dead_code)]
 impl Token {
-    pub(super) fn instruction(content: &str) -> Self {
+    pub fn instruction(content: &str) -> Self {
         Token {
             token_type: TokenType::Instruction,
-            content: content.to_owned(),
-        }
     }
 
-    pub(super) fn register(content: &str) -> Self {
+    pub fn register(content: &str) -> Self {
         Token {
             token_type: TokenType::Register,
-            content: content.to_owned(),
+            content: content.to_lowercase(),
         }
     }
 
-    pub(super) fn value(content: &str) -> Self {
+    pub fn value(content: &str) -> Self {
         Token {
             token_type: TokenType::Value,
-            content: content.to_owned(),
+            content: content.to_lowercase(),
         }
     }
 
-    pub(super) fn label(content: &str) -> Self {
+    pub fn label_declr(content: &str) -> Self {
         Token {
-            token_type: TokenType::Label,
-            content: content.to_owned(),
+            token_type: TokenType::LabelDeclaration,
+            content: content.to_lowercase(),
         }
     }
 
-    pub(super) fn comma() -> Self {
+    pub fn label_value(content: &str) -> Self {
+        Token {
+            token_type: TokenType::LabelValue,
+            content: content.to_lowercase(),
+        }
+    }
+
+    pub fn comma() -> Self {
         Token {
             token_type: TokenType::Comma,
             content: String::from(","),
         }
     }
 
-    pub(super) fn new_line() -> Self {
+    pub fn new_line() -> Self {
         Token {
             token_type: TokenType::NewLine,
             content: String::from("\n"),
         }
     }
 
-    pub(super) fn get_token_type(&self) -> &TokenType {
+    pub fn get_token_type(&self) -> &TokenType {
         &self.token_type
     }
 
-    pub(super) fn get_content(&self) -> &str {
+    pub fn get_content(&self) -> &str {
         &self.content
     }
 }
