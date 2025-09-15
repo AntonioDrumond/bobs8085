@@ -84,7 +84,28 @@ impl CPU {
     pub(super) fn dcr(&mut self, bus: &mut Bus, inst: u8) {
         let d = (inst >> 3) & 0x07;
         let value = self.get_reg(bus, d);
-        self.set_reg(bus, d, value - 1);
+        let res = value.wrapping_sub(1);
+        self.set_reg(bus, d, res);
+        if (res == 0)
+        {
+            self.z = true;
+        }
+        else
+        {
+            self.z = false;
+        }
+        if (value == 0)
+        {
+            self.s = true;
+            self.ac = true;
+            self.cy = true;
+        }
+        else
+        {
+            self.s = false;
+            self.ac = false;
+            self.cy = false;
+        }
     }
 
     pub(super) fn inx(&mut self, inst: u8) {
@@ -148,7 +169,7 @@ impl CPU {
         let s = inst & 0x07;
         let value = self.get_reg(bus, s);
         let prev_a = self.a;
-        self.a = prev_a + value;
+        self.a = prev_a.wrapping_add(value);
         self.update_s(self.a);
         self.update_z(self.a);
         self.update_p(self.a);
@@ -252,7 +273,7 @@ impl CPU {
         let lo = prev_a & 0xF;
 
         if lo > 0x9 || self.ac {
-            self.a += 0x6;
+            self.a = self.a.wrapping_add(0x6);
         }
 
         self.ac = (self.a & 0x0F) < (prev_a & 0x0F);
@@ -261,7 +282,7 @@ impl CPU {
         let hi = (self.a >> 4) & 0xF;
 
         if hi > 0x9 || self.cy {
-            self.a += 0x60;
+            self.a = self.a.wrapping_add(0x60);
             self.cy = true;
         }
 

@@ -20,7 +20,12 @@ impl Default for Bus {
 impl Bus {
     
     pub fn from_file(filename: &str) -> Bus {
-        todo!("Create bus from memory file");
+        let mut mem = Memory::default();
+        match mem.read_dump(filename) {
+            Ok(()) => (),
+            Err(err) => panic!("{}", err),
+        }
+        Bus { mem, io: Io::default() }
     }
 
     pub fn new() -> Bus {

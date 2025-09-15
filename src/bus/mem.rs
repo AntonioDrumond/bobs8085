@@ -64,7 +64,7 @@ impl Memory {
         let mut file = File::open(filename)?;
         let mut i = 0;
         while i < self.arr.len()-1 {
-            file.read_exact(&mut self.arr[i..i+8])?;
+            file.read_exact(&mut self.arr[i..i+16])?;
             i+=16;
         }
         Ok(())
