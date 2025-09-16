@@ -13,9 +13,9 @@ pub fn assemble(input_path: &str, output_name: &str) -> Result<(), Box<dyn std::
     let mut contents = String::new();
     input.read_to_string(&mut contents)?;
     let tokens = tokenize(&contents);
-    println!("{:?}", tokens);
+    println!("{tokens:?}");
     let machine_code = parse(tokens)?;
-    let mut output = File::create(format!("bin/{}.o", output_name))?;
+    let mut output = File::create(format!("bin/{output_name}.bin"))?;
     output.write_all(machine_code.as_slice())?;
     Ok(())
 }

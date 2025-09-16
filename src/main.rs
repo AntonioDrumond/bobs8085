@@ -4,9 +4,13 @@ mod cpu;
 mod utils;
 mod changes;
 
+use std::io::Write;
+use std::io;
+
 use crate::cpu::CPU;
 use crate::changes::Changes;
 use crate::bus::Bus;
+use crate::utils::clear;
 
 fn run_all(cpu: &mut CPU, bus: &mut Bus) {
     cpu.set_pc(0xC000);
@@ -41,18 +45,35 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
 
     while running {
         
-        println!("step: {}\n", step);
-        let line = input!("> $ ").to_lowercase();
+        clear();
+        println!("step: {step}\n");
+        cpu.print_state();
+        println!();
+        match bus.mem_write_file("./memory.txt") {
+            Ok(()) => println!("Memory saved to \"./memory.txt\""),
+            Err(e) => eprintln!("Error printing memory: {e}"),
+        }
+        match bus.io_write_file("./io.txt") {
+            Ok(()) => println!("IO ports saved to \"./io.txt\""),
+            Err(e) => eprintln!("Error printing IO: {e}"),
+        }
+
+        let line = input!("Options:\n
+[B]/[Backward]/[<] => Go back 1 step\n
+[Stop]/[Exit]/[|]  => Exit step by step execution\n
+[F]/[Forward]/[>]  => Go forward 1 step\n
+> $ "
+        ).to_lowercase();
         let cmd = line.as_str().split_whitespace().collect::<Vec<_>>();
 
         let cpu_old = cpu.clone();
         let mem_old = bus.mem_clone();
-        let mut halt = false;
+        // let mut halt = false;
 
         if !cmd.is_empty() {
             match cmd[0] {
                 ">" | "forward" | "f" => {
-                    halt = !cpu.execute(bus);
+                    if !cpu.execute(bus) { running = false; } 
                     let diff = { Changes { memory: bus.mem_diff(mem_old), cpu: cpu.diff(cpu_old)} };
                     changes.push(diff);
                     step += 1;
@@ -66,18 +87,14 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
 
                 },
                 "|" | "stop" | "s" | "exit" => { 
+                    clear();
                     running = false;
                 },
-                "print" | "p" => {
-                    println!("");
-                    cpu.print_state();
-                    println!("");
-                    bus.mem_print_program();
-                }
                 _ => println!("\"{}\" is not recognized as a command", cmd[0]),
             }
         }
 
+        /*
         while halt {
             let line = input!("Program finished! Do you want to exit it?\n\n[y/n]\n\n").to_lowercase();
             let cmd = line.as_str().split_whitespace().collect::<Vec<_>>();
@@ -90,9 +107,11 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
                 }
             }
         }
+        */
     }
 
-    println!("\nCPU State at end of program:\n");
+    clear();
+    println!("Program finished.\nCPU State at end of program:\n");
     cpu.print_state();
     println!("\n");
     match bus.mem_write_file("./memory.txt") {
@@ -133,7 +152,7 @@ fn main() {
                                         "step" => {
                                             if cmd.len() < 4 { eprintln!("Please provide file name for command \"run bin step\""); }
                                             else {
-                                                run_all(&mut CPU::default(), &mut Bus::from_file(cmd[3]));
+                                                run_step(&mut CPU::default(), &mut Bus::from_file(cmd[3]));
                                             }
                                         }
                                         _ => run_all(&mut CPU::default(), &mut Bus::from_file(cmd[2])),
