@@ -4,10 +4,6 @@ mod cpu;
 mod utils;
 mod changes;
 
-use std::io;
-use std::io::Write;
-
-use assembler::assemble;
 use crate::cpu::CPU;
 use crate::changes::Changes;
 use crate::bus::Bus;

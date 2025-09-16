@@ -34,8 +34,8 @@ impl CPU {
         println!("📥E  => {:02X} - {:08b}    |    🚩CY => {}", self.e, self.e, self.cy);
         println!("📥H  => {:02X} - {:08b}", self.h, self.h);
         println!("📥L  => {:02X} - {:08b}", self.l, self.l);
-        println!("📥SP => {:04X} - {:08b}", self.sp, self.sp);
-        println!("📥PC => {:04X} - {:08b}", self.pc, self.pc);
+        println!("📥SP => {:04X} - {:016b}", self.sp, self.sp);
+        println!("📥PC => {:04X} - {:016b}", self.pc, self.pc);
     }
 
     pub fn set_pc(&mut self, val: u16) {
