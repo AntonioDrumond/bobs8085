@@ -1,8 +1,8 @@
 mod instructions;
-mod changes;
 
 use crate::bus::Bus;
-use crate::changes::*;
+use crate::changes::Regs;
+use crate::changes::Changes;
 
 #[derive(Default, Debug, Clone)]
 #[allow(dead_code, unused_variables, clippy::upper_case_acronyms)]
@@ -10,7 +10,6 @@ pub struct CPU {
     a: u8, // Accumulator
     b: u8, // Pair BC
     c: u8,
-
     d: u8, // Pair DE
     e: u8,
     h: u8, // Pair HL
@@ -148,31 +147,70 @@ impl CPU {
         }
     }
 
-    fn diff (&self, other:CPU) -> vec<CPU_E> {
+    pub fn diff (&self, other:CPU) -> Regs {
+
+        let mut cpu_changes = Regs::default();
+
         if self.a != other.a {
-            CPU_E.registers.push(A, self.a);
+            cpu_changes.a = self.a;
         }
         if self.b != other.b {
-            CPU_E.registers.push(B, self.b);
+            cpu_changes.b = self.b;
         }
         if self.c != other.c {
-            CPU_E.registers.push(C, self.c);
+            cpu_changes.c = self.c;
         }
         if self.d != other.d {
-            CPU_E.registers.push(D, self.d);
+            cpu_changes.d = self.d;
         }
         if self.e != other.e {
-            CPU_E.registers.push(E, self.e);
+            cpu_changes.e = self.e;
         }
         if self.h != other.h {
-            CPU_E.registers.push(H, self.h);
+            cpu_changes.h = self.h;
         }
         if self.l != other.l {
-            CPU_E.registers.push(L, self.l);
+            cpu_changes.l = self.l;
         }
-
         if self.z != other.z {
-            CPU_E.
+            cpu_changes.z = self.z;
+        }
+        if self.s != other.s {
+            cpu_changes.s = self.s;
+        }
+        if self.ac != other.ac {
+            cpu_changes.ac = self.ac
+        }
+        if self.p != other.p {
+            cpu_changes.p = self.p;
+        }
+        if self.pc != other.pc {
+            cpu_changes.pc = self.pc;
+        }
+        if self.sp != other.sp {
+            cpu_changes.sp = self.sp;
+        }
+        cpu_changes
+    }
+
+    pub fn restore (&mut self, bus: &mut Bus, changes: &Changes) {
+        self.a = changes.cpu.a;
+        self.b = changes.cpu.b;
+        self.c = changes.cpu.c;
+        self.d = changes.cpu.d;
+        self.e = changes.cpu.e;
+        self.h = changes.cpu.h;
+        self.l = changes.cpu.l;
+        self.z = changes.cpu.z;
+        self.s = changes.cpu.s;
+        self.ac = changes.cpu.ac;
+        self.cy = changes.cpu.cy;
+        self.p = changes.cpu.p;
+        self.pc = changes.cpu.pc;
+        self.sp = changes.cpu.sp;
+
+        for (add, val) in &changes.memory {
+            bus.mem_set8(*add, *val);
         }
     }
 

@@ -31,7 +31,7 @@ impl Memory {
         for i in &self.arr {
             if *i != other.arr[j as usize]
             {
-                changes.push((j, *i));
+                changes.push((j, other.arr[j as usize]));
             }
             j = j.wrapping_add(1);
         }

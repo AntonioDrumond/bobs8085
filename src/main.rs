@@ -2,12 +2,14 @@ mod assembler;
 mod bus;
 mod cpu;
 mod utils;
+mod changes;
 
 use std::io;
 use std::io::Write;
 
 use assembler::assemble;
 use crate::cpu::CPU;
+use crate::changes::Changes;
 use crate::bus::Bus;
 
 fn run_all(cpu: &mut CPU, bus: &mut Bus) {
@@ -31,32 +33,80 @@ fn run_all(cpu: &mut CPU, bus: &mut Bus) {
 
 fn run_step(cpu: &mut CPU, bus: &mut Bus) {
 
-    let old = bus.mem_clone();
-    let mem_diff : Vec<(u16, u8)> = bus.mem_diff(old);
-    println!("n = {}", mem_diff.len());
+    cpu.set_pc(0xC000);
 
-//	    cpu.set_pc(0xC000);
-//	    let mut running = true;
-//	    while running {
-//	        
-//	        let in = input!().to_lowercase();
-//	        match in {
-//	            ">" | "forward" | "f" => (),
-//	            "<" | "backward" | "b" => (),
-//	        }
-//	        running = cpu.execute(bus);
-//	    }
-//	    println!("\nCPU State at end of program:\n");
-//	    cpu.print_state();
-//	    println!("\n");
-//	    match bus.mem_write_file("./memory.txt") {
-//	        Ok(()) => println!("Memory saved to \"./memory.txt\""),
-//	        Err(e) => eprintln!("Error printing memory: {e}"),
-//	    }
-//	    match bus.io_write_file("./io.txt") {
-//	        Ok(()) => println!("IO ports saved to \"./io.txt\""),
-//	        Err(e) => eprintln!("Error printing IO: {e}"),
-//	    }
+    let mut changes : Vec<Changes> = vec![];
+    let mut start = Changes::default();
+    start.cpu.pc = 0xC000;
+    changes.push(start);
+
+    let mut running = true;
+    let mut step = 0;
+
+    while running {
+        
+        println!("step: {}\n", step);
+        let line = input!("> $ ").to_lowercase();
+        let cmd = line.as_str().split_whitespace().collect::<Vec<_>>();
+
+        let cpu_old = cpu.clone();
+        let mem_old = bus.mem_clone();
+        let mut halt = false;
+
+        if !cmd.is_empty() {
+            match cmd[0] {
+                ">" | "forward" | "f" => {
+                    halt = !cpu.execute(bus);
+                    let diff = { Changes { memory: bus.mem_diff(mem_old), cpu: cpu.diff(cpu_old)} };
+                    changes.push(diff);
+                    step += 1;
+                },
+                "<" | "backward" | "b" => {
+                    if step != 0 {
+                        step -= 1;
+                        cpu.restore(bus, &changes[step]);
+                    }
+                    else { println!("Already at the start!"); }
+
+                },
+                "|" | "stop" | "s" | "exit" => { 
+                    running = false;
+                },
+                "print" | "p" => {
+                    println!("");
+                    cpu.print_state();
+                    println!("");
+                    bus.mem_print_program();
+                }
+                _ => println!("\"{}\" is not recognized as a command", cmd[0]),
+            }
+        }
+
+        while halt {
+            let line = input!("Program finished! Do you want to exit it?\n\n[y/n]\n\n").to_lowercase();
+            let cmd = line.as_str().split_whitespace().collect::<Vec<_>>();
+
+            if !cmd.is_empty() {
+                match cmd[0] {
+                    "yes" | "y" => running = false,
+                    "no" | "n" => halt = false,
+                    _ => (),
+                }
+            }
+        }
+    }
+
+    println!("\nCPU State at end of program:\n");
+    cpu.print_state();
+    println!("\n");
+    match bus.mem_write_file("./memory.txt") {
+        Ok(()) => println!("Memory saved to \"./memory.txt\""),
+        Err(e) => eprintln!("Error printing memory: {e}"),
+    }
+    match bus.io_write_file("./io.txt") {
+        Ok(()) => println!("IO ports saved to \"./io.txt\""),
+        Err(e) => eprintln!("Error printing IO: {e}"),
+    }
 
 }
 

@@ -1,19 +1,26 @@
-#[derive(Copy, Clone)]
-pub enum Register {
-    A, B, C, D, E, H, L,
+#[derive(Default, Debug, Clone, Copy)]
+pub struct Regs {
+
+    pub a : u8,
+    pub b : u8,
+    pub c : u8,
+    pub d : u8,
+    pub e : u8,
+    pub h : u8,
+    pub l : u8,
+    pub pc : u16,
+    pub sp : u16,  
+
+    pub z : bool,
+    pub s : bool,
+    pub ac : bool,
+    pub cy : bool,
+    pub p : bool,
+
 }
 
-#[derive(Copy, Clone)]
-pub enum Flag {
-    Z, S, AC, CY, P,
-}
-
-pub enum CPU_E {
-    registers: Vec<(Register, u8)>,
-    flags: Vec<(Flag, boll)>,
-}   
-
-pub enum Changes {
-    cpu: CPU,
-    memory: Vec<(u16, u8)>,
+#[derive(Default, Debug, Clone)]
+pub struct Changes {
+    pub cpu : Regs,
+    pub memory : Vec<(u16, u8)>,
 }
