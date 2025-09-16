@@ -21,7 +21,8 @@ fn str_to_tok(str: &str, found_inst_on_line: bool) -> (bool, Token) {
     } else if found_inst_on_line {
         if matches!(
             lower.as_str(),
-            "b" | "c" | "d" | "e" | "h" | "l" | "m" | "a" | "sp"
+            "b" | "c" | "d" | "e" | "h" | "l" | "m" | "a" | "sp" |
+            "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7"
         ) {
             Token::Register(lower)
         } else {

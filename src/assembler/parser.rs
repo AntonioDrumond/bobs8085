@@ -61,6 +61,8 @@ enum State {
     Imm8,
     /// Expecting an 16-bit immediate value
     Imm16,
+    /// Special RST immediate
+    RstImm,
     /// Ready to append the assembled instruction to the buffer
     Append,
 }
@@ -77,6 +79,8 @@ struct Parser {
     labels: HashMap<String, u32>,
     /// A list of locations in the buffer that need to be patched with label addresses
     unresolved_labels: Vec<(usize, String)>,
+    /// Flag to indicate the need of allocating bytes for a label in the buffer
+    alloc_lable: bool,
 }
 
 impl Parser {
@@ -89,6 +93,7 @@ impl Parser {
             address: 0xC000,
             labels: HashMap::new(),
             unresolved_labels: Vec::new(),
+            alloc_lable: false,
         }
     }
 
@@ -137,6 +142,7 @@ impl Parser {
             State::RegPair => self.handle_register_arg(token, 4, &encode_arg2),
             State::Imm8 => self.handle_immediate(token, State::Imm8),
             State::Imm16 => self.handle_immediate(token, State::Imm16),
+            State::RstImm => self.handle_register_arg(token, 3, &parse_arg),
             State::Append => self.handle_append(token),
         }
     }
@@ -182,6 +188,7 @@ impl Parser {
                 if matches!(state, State::Imm16) {
                     self.unresolved_labels
                         .push((self.buffer.len() + 1, content));
+                    self.alloc_lable = true;
                     self.next_bytes |= 0;
                 } else {
                     return Err(ParserError::InvalidInstructionArgument(content));
@@ -215,11 +222,17 @@ impl Parser {
 
         self.buffer.push(self.next_bytes as u8);
         self.next_bytes >>= 8;
-        while self.next_bytes > 0 {
-            self.buffer.push(self.next_bytes as u8);
-            self.next_bytes >>= 8;
+        if self.alloc_lable {
+            self.buffer.push(0);
+            self.buffer.push(0);
+        } else {
+            while self.next_bytes > 0 {
+                self.buffer.push(self.next_bytes as u8);
+                self.next_bytes >>= 8;
+            }
         }
 
+        self.alloc_lable = false;
         self.address += (self.buffer.len() - old_len) as u32;
         self.state_queue.push_back(State::Search);
         Ok(())
@@ -232,6 +245,10 @@ pub fn parse(tokens: Vec<Token>) -> Result<Vec<u8>, ParserError> {
 
 fn parse_immediate(value: &str) -> Result<u16, ParserError> {
     u16::from_str_radix(value, 16).map_err(|_| ParserError::InvalidValueFormat(value.to_string()))
+}
+
+fn parse_arg(value: &str) -> Result<u8, ParserError> {
+    u8::from_str_radix(value, 10).map_err(|_| ParserError::InvalidValueFormat(value.to_string()))
 }
 
 fn encode_arg3(arg: &str) -> Result<u8, ParserError> {
@@ -259,7 +276,7 @@ fn encode_arg2(arg: &str) -> Result<u8, ParserError> {
 }
 
 fn encode_inst(inst: &str) -> Result<(u8, Option<Vec<State>>), ParserError> {
-    use State::{Comma, DestReg, Imm8, Imm16, RegPair, SrcReg};
+    use State::{Comma, DestReg, Imm8, Imm16, RegPair, RstImm, SrcReg};
     match inst {
         "mov" => Ok((0x40, Some(vec![DestReg, Comma, SrcReg]))),
         "mvi" => Ok((0x06, Some(vec![DestReg, Comma, Imm8]))),
@@ -305,7 +322,7 @@ fn encode_inst(inst: &str) -> Result<(u8, Option<Vec<State>>), ParserError> {
         "rm" => Ok((0xF8, None)),
         "rpe" => Ok((0xE8, None)),
         "rpo" => Ok((0xE0, None)),
-        "rst" => Ok((0xC7, Some(vec![DestReg]))),
+        "rst" => Ok((0xC7, Some(vec![RstImm]))),
         "in" => Ok((0xDB, Some(vec![Imm8]))),
         "out" => Ok((0xD3, Some(vec![Imm8]))),
         "inr" => Ok((0x04, Some(vec![DestReg]))),
