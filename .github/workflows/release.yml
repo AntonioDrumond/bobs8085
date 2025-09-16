@@ -1,8 +1,5 @@
-# .github/workflows/release.yml
-
 name: Release
 
-# This workflow runs when you create a new tag (e.g., v1.0, v1.0.1)
 on:
   push:
     tags:
@@ -17,28 +14,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # This is the core magic. It uses the `tauri-apps/cross-platform-build` action
-      # to build native binaries for all three targets in parallel.
       - name: Build binaries for all platforms
         uses: tauri-apps/cross-platform-build@v2
         with:
-          # A comma-separated list of targets to build for.
           targets: 'x86_64-unknown-linux-gnu, x86_64-apple-darwin, x86_64-pc-windows-msvc'
-          # Tell the action where to find the Rust project
           projectPath: '.'
-          # A pattern to find the binary name in the target directory
-          binaryName: 'intel-8085-sim'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          binaryName: 'bobs8085'
 
-      # This step takes the binaries built above and creates a formal GitHub Release.
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          # The body of the release notes will be automatically generated from your git commits.
           generate_release_notes: true
-          # The action will upload all files ending in .zip, .tar.gz, .exe etc.
-          # The cross-platform-build action automatically creates these archives for you.
           files: |
-            intel-8085-sim*
-
+            bobs8085*
