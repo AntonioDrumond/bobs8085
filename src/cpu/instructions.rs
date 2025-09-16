@@ -118,13 +118,13 @@ impl CPU {
     pub(super) fn inx(&mut self, inst: u8) { // Does NOT alter flags
         let d = (inst >> 4) & 0x03;
         let value = self.get_reg_pair(d);
-        self.set_reg_pair(d, value + 1);
+        self.set_reg_pair(d, value.wrapping_add(1));
     }
 
     pub(super) fn dcx(&mut self, inst: u8) { // Does NOT alter flags
         let d = (inst >> 4) & 0x03;
         let value = self.get_reg_pair(d);
-        self.set_reg_pair(d, value - 1);
+        self.set_reg_pair(d, value.wrapping_sub(1));
     }
 
     pub(super) fn rotate(&mut self, inst: u8) {
@@ -188,7 +188,9 @@ impl CPU {
         let s = inst & 0x07;
         let value = self.get_reg(bus, s);
         let prev_a = self.a;
-        self.a = prev_a + value + self.cy as u8;
+        //self.a = prev_a + value + self.cy as u8;
+        self.a = self.a.wrapping_add(value);
+        self.a = self.a.wrapping_add(self.cy as u8);
         self.update_s(self.a);
         self.update_z(self.a);
         self.update_p(self.a);
@@ -199,7 +201,7 @@ impl CPU {
     pub(super) fn adi(&mut self, bus: &mut Bus) {
         let value = self.fetch8(bus);
         let prev_a = self.a;
-        self.a = prev_a + value;
+        self.a = prev_a.wrapping_add(value);
         self.update_s(self.a);
         self.update_z(self.a);
         self.update_p(self.a);
@@ -210,7 +212,9 @@ impl CPU {
     pub(super) fn aci(&mut self, bus: &mut Bus) {
         let value = self.fetch8(bus);
         let prev_a = self.a;
-        self.a = prev_a + value + self.cy as u8;
+        //self.a = prev_a + value + self.cy as u8;
+        self.a = prev_a.wrapping_add(value);
+        self.a = self.a.wrapping_add(self.cy as u8);
         self.update_s(self.a);
         self.update_z(self.a);
         self.update_p(self.a);
@@ -222,7 +226,7 @@ impl CPU {
         let s = (inst >> 4) & 0x03;
         let value = self.get_reg_pair(s);
         let prev_hl = (self.h as u16) << 8 | self.l as u16;
-        let cur_hl = prev_hl + value;
+        let cur_hl = prev_hl.wrapping_add(value);
         self.h = (value >> 8) as u8;
         self.l = value as u8;
         self.cy = cur_hl < prev_hl;
@@ -232,7 +236,8 @@ impl CPU {
         let s = inst & 0x03;
         let value = self.get_reg(bus, s);
         let prev_a = self.a;
-        self.a = prev_a - value;
+        // self.a = prev_a - value;
+        self.a = prev_a.wrapping_sub(value);
         self.update_s(self.a);
         self.update_z(self.a);
         self.update_p(self.a);
@@ -242,9 +247,11 @@ impl CPU {
 
     pub(super) fn sbb(&mut self, bus: &mut Bus, inst: u8) {
         let s = inst & 0x03;
-        let value = self.get_reg(bus, s) + self.cy as u8;
+        // let value = self.get_reg(bus, s) + self.cy as u8;
+        let value = self.get_reg(bus, s).wrapping_add(self.cy as u8);
         let prev_a = self.a;
-        self.a = prev_a - value;
+        // self.a = prev_a - value;
+        self.a = prev_a.wrapping_sub(value);
         self.update_s(self.a);
         self.update_z(self.a);
         self.update_p(self.a);
@@ -255,7 +262,8 @@ impl CPU {
     pub(super) fn sui(&mut self, bus: &mut Bus) {
         let value = self.fetch8(bus);
         let prev_a = self.a;
-        self.a = prev_a - value;
+        // self.a = prev_a - value;
+        self.a = prev_a.wrapping_sub(value);
         self.update_s(self.a);
         self.update_z(self.a);
         self.update_p(self.a);
@@ -266,7 +274,8 @@ impl CPU {
     pub(super) fn sbi(&mut self, bus: &mut Bus) {
         let value = self.fetch8(bus) + self.cy as u8;
         let prev_a = self.a;
-        self.a = prev_a - value;
+        // self.a = prev_a - value;
+        self.a = prev_a.wrapping_sub(value);
         self.update_s(self.a);
         self.update_z(self.a);
         self.update_p(self.a);
