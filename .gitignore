@@ -1,5 +1,6 @@
 /target
 *.orig
+*.txt
 
 # Added by cargo
 #
