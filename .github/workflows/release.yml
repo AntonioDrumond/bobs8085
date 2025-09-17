@@ -58,7 +58,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-asset-${{ matrix.target }}-${{ matrix.os }}
-          path: release-asset.*
+          path: release-asset-*
 
   release:
     name: Create Release
