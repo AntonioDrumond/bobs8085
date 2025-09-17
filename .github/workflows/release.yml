@@ -47,17 +47,17 @@ jobs:
           if [ "${{ runner.os }}" == "Windows" ]; then
             cp "target/${{ matrix.target }}/release/${{ matrix.binary_name }}" "staging/"
             cd staging
-            7z a "../release-asset.zip" *
+            7z a "../release-asset-${{ matrix.os }}.zip" *
           else
             cp "target/${{ matrix.target }}/release/${{ matrix.binary_name }}" "staging/"
             cd staging
-            tar czf "../release-asset.tar.gz" *
+            tar czf "../release-asset-${{ matrix.os }}.tar.gz" *
           fi
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-asset-${{ matrix.target }}
+          name: release-asset-${{ matrix.target }}-${{ matrix.os }}
           path: release-asset.*
 
   release:
