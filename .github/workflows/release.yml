@@ -15,17 +15,17 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             asset_name_suffix: "linux-x86_64.tar.gz"
-            binary_name: "intel-8085-sim"
+            binary_name: "bobs8085"
 
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             asset_name_suffix: "windows-x86_64.zip"
-            binary_name: "intel-8085-sim.exe"
+            binary_name: "bobs8085.exe"
 
-          # - os: macos-latest
-            # target: x86_64-apple-darwin
-            # asset_name_suffix: "macos-x86_64.tar.gz"
-            # binary_name: "intel-8085-sim"
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            asset_name_suffix: "macos-x86_64.tar.gz"
+            binary_name: "bobs8085"
 
     steps:
       - name: Checkout code
