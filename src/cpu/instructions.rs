@@ -520,7 +520,7 @@ impl CPU {
             0xC4 => {
                 // cnz
                 if !self.z {
-                    self.sp -= 2_;
+                    self.sp -= 2;
                     bus.mem_set16_reverse(self.sp, self.pc + 2);
                     self.pc = self.fetch16(bus);
                 }
