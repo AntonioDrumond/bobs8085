@@ -22,10 +22,10 @@ jobs:
             asset_name_suffix: "windows-x86_64.zip"
             binary_name: "intel-8085-sim.exe"
 
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            asset_name_suffix: "macos-x86_64.tar.gz"
-            binary_name: "intel-8085-sim"
+          # - os: macos-latest
+            # target: x86_64-apple-darwin
+            # asset_name_suffix: "macos-x86_64.tar.gz"
+            # binary_name: "intel-8085-sim"
 
     steps:
       - name: Checkout code
