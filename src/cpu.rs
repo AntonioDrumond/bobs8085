@@ -5,6 +5,17 @@ use crate::changes::Regs;
 use crate::changes::Changes;
 
 #[derive(Default, Debug, Clone)]
+pub struct Interrupts {
+
+    // From higher to lower priority
+    trap: bool,
+    rst7_5: bool,
+    rst6_5: bool,
+    rst5_5: bool,
+    intr: bool,     // Interrupt request
+}
+
+#[derive(Default, Debug, Clone)]
 #[allow(dead_code, unused_variables, clippy::upper_case_acronyms)]
 pub struct CPU {
     a: u8, // Accumulator
@@ -16,13 +27,25 @@ pub struct CPU {
     l: u8,
     sp: u16, // Stack Pointer
     pc: u16, // Program Counter
+
     // Flags:
     s: bool,  // Sign
     z: bool,  // Zero
     ac: bool, // Auxiliary Carry
     p: bool,  // Parity
     cy: bool, // Carry
+    
+    // Serial
+    pub sid: bool,  // Serial Input Data        -- Public to simulate a hardware pin
+    pub sod: bool,  // Serial Output Data       --                 ==
+
+    // Interrupts
+    pub pending_int: Interrupts, // Pending interrupts      -- Public to simulate a hardware pin
+    masked_int: Interrupts,      // Disabled interrupts   (trap should't be masked)
+    int: bool,                   // Interrupt flip-flop
+    inta: bool,                  // Interrupt accept flag (used with intr only)
 }
+
 #[allow(dead_code, unused_variables)]
 impl CPU {
     #[rustfmt::skip]
@@ -149,48 +172,22 @@ impl CPU {
 
     pub fn diff (&self, other:CPU) -> Regs {
 
-        let mut cpu_changes = Regs::default();
+        let mut changes = Regs::default();
 
-        if self.a != other.a {
-            cpu_changes.a = self.a;
-        }
-        if self.b != other.b {
-            cpu_changes.b = self.b;
-        }
-        if self.c != other.c {
-            cpu_changes.c = self.c;
-        }
-        if self.d != other.d {
-            cpu_changes.d = self.d;
-        }
-        if self.e != other.e {
-            cpu_changes.e = self.e;
-        }
-        if self.h != other.h {
-            cpu_changes.h = self.h;
-        }
-        if self.l != other.l {
-            cpu_changes.l = self.l;
-        }
-        if self.z != other.z {
-            cpu_changes.z = self.z;
-        }
-        if self.s != other.s {
-            cpu_changes.s = self.s;
-        }
-        if self.ac != other.ac {
-            cpu_changes.ac = self.ac
-        }
-        if self.p != other.p {
-            cpu_changes.p = self.p;
-        }
-        if self.pc != other.pc {
-            cpu_changes.pc = self.pc;
-        }
-        if self.sp != other.sp {
-            cpu_changes.sp = self.sp;
-        }
-        cpu_changes
+        if self.a != other.a { changes.a = self.a; }
+        if self.b != other.b { changes.b = self.b; }
+        if self.c != other.c { changes.c = self.c; }
+        if self.d != other.d { changes.d = self.d; }
+        if self.e != other.e { changes.e = self.e; }
+        if self.h != other.h { changes.h = self.h; }
+        if self.l != other.l { changes.l = self.l; }
+        if self.z != other.z { changes.z = self.z; }
+        if self.s != other.s { changes.s = self.s; }
+        if self.ac != other.ac { changes.ac = self.ac; }
+        if self.p != other.p { changes.p = self.p; }
+        if self.pc != other.pc { changes.pc = self.pc; }
+        if self.sp != other.sp { changes.sp = self.sp; }
+        changes
     }
 
     pub fn restore (&mut self, bus: &mut Bus, changes: &Changes) {
@@ -215,6 +212,33 @@ impl CPU {
     }
 
     pub fn execute(&mut self, bus: &mut Bus) -> bool {
+
+        if self.pending_int.trap {
+            self.rst(0x24, bus);
+        }
+
+        if self.int {
+            self.int = false;
+
+            if self.pending_int.rst7_5 && !self.masked_int.rst7_5 {
+                self.rst(0x3C, bus);
+                self.pending_int.rst7_5 = false;
+            }
+            else if self.pending_int.rst6_5 && !self.masked_int.rst6_5 {
+                self.rst(0x34, bus);
+                self.pending_int.rst6_5 = false;
+            }
+            else if self.pending_int.rst5_5 && !self.masked_int.rst5_5 {
+                self.rst(0x2C, bus);
+                self.pending_int.rst5_5 = false;
+            }
+            else if self.pending_int.intr {
+                let addr = self.fetch8(bus);
+                let val = bus.io_get8(addr);
+                self.rst(val, bus);
+            }
+        }
+
         if self.pc >= 0xD000 { return false; }
         let inst = bus.mem_get8(self.pc);
         self.pc += 1;
@@ -268,11 +292,11 @@ impl CPU {
             0x37 => self.stc(),
             0x3F => self.cmc(),
             0x27 => self.daa(),
-            0xFB => todo!("EI"),
-            0xF3 => todo!("DI"),
+            0xFB => self.ei(),
+            0xF3 => self.di(),
             0x00 => self.nop(),
-            0x20 => todo!("RIM"),
-            0x30 => todo!("SIM"),
+            0x20 => self.rim(),
+            0x30 => self.sim(),
             _ => panic!("Instrução não identificada: {inst:02X}"),
         };
         true

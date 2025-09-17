@@ -1,5 +1,7 @@
 /target
 *.orig
+io.txt
+memory.txt
 
 # Added by cargo
 #
