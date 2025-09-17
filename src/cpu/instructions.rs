@@ -655,6 +655,8 @@ impl CPU {
         self.update_p(self.a);
         self.update_s(self.a);
         self.update_z(self.a);
+        self.cy = false;
+        self.ac = true;
     }
 
     pub(super) fn ora(&mut self, bus: &Bus, inst: u8) {
@@ -663,6 +665,8 @@ impl CPU {
         self.update_p(self.a);
         self.update_s(self.a);
         self.update_z(self.a);
+        self.cy = false;
+        self.ac = false;
     }
 
     pub(super) fn xra(&mut self, bus: &Bus, inst: u8) {
@@ -671,20 +675,31 @@ impl CPU {
         self.update_p(self.a);
         self.update_s(self.a);
         self.update_z(self.a);
+        self.cy = false;
+        self.ac = false;
     }
 
     pub(super) fn cmp(&mut self, bus: &Bus, inst: u8) {
         let which = inst & 0x07;
         if self.a < self.get_reg(bus, which) {
             self.cy = true;
+            self.ac = true;
+            self.s = true;
             self.z = false;
+            self.p = false;
         }
         if self.a == self.get_reg(bus, which) {
             self.cy = false;
+            self.ac = false;
+            self.s = false;
             self.z = true;
+            self.p = true;
         } else {
             self.cy = false;
+            self.ac = false;
+            self.s = false;
             self.z = false;
+            self.p = false;
         }
     }
 
@@ -694,6 +709,8 @@ impl CPU {
         self.update_p(self.a);
         self.update_s(self.a);
         self.update_z(self.a);
+        self.cy = false;
+        self.ac = true;
     }
 
     pub(super) fn ori(&mut self, bus: &Bus, inst: u8) {
@@ -702,6 +719,8 @@ impl CPU {
         self.update_p(self.a);
         self.update_s(self.a);
         self.update_z(self.a);
+        self.cy = false;
+        self.ac = false;
     }
 
     pub(super) fn xri(&mut self, bus: &Bus, inst: u8) {
@@ -710,6 +729,8 @@ impl CPU {
         self.update_p(self.a);
         self.update_s(self.a);
         self.update_z(self.a);
+        self.cy = false;
+        self.ac = false;
     }
 
     pub(super) fn cpi(&mut self, bus: &Bus, inst: u8) {
