@@ -11,6 +11,8 @@ use crate::cpu::CPU;
 use crate::changes::Changes;
 use crate::bus::Bus;
 use crate::utils::clear;
+use crate::utils::parse_u16;
+use crate::assembler::assemble;
 
 fn run_all(cpu: &mut CPU, bus: &mut Bus) {
     cpu.set_pc(0xC000);
@@ -59,16 +61,16 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
         }
 
         let line = input!("Options:\n
-[B]/[Backward]/[<] => Go back 1 step\n
-[Stop]/[Exit]/[|]  => Exit step by step execution\n
 [F]/[Forward]/[>]  => Go forward 1 step\n
+[S]/[Stop]/[Exit]/[|]  => Exit step by step execution\n
+[B]/[Backward]/[<] => Go back 1 step\n
+[P]/[Print]/[Print + range]  => Print the memory\n
 > $ "
         ).to_lowercase();
         let cmd = line.as_str().split_whitespace().collect::<Vec<_>>();
 
         let cpu_old = cpu.clone();
         let mem_old = bus.mem_clone();
-        // let mut halt = false;
 
         if !cmd.is_empty() {
             match cmd[0] {
@@ -90,24 +92,44 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
                     clear();
                     running = false;
                 },
+                "p" | "print" => {
+                    let len = cmd.len();
+                    if len == 1 { 
+                        bus.mem_print_program(); 
+                    }
+                    else if len == 2 {
+                        let mut val = 0x00;
+                        match parse_u16(cmd[1]) {
+                            Ok(res) => val = res,
+                            Err(err) => eprintln!("ParseError: {}", err),
+                        }
+                        bus.mem_print_range(val, val+1);
+                    }
+                    else if len == 3 {
+                        let mut lo = 0x00;
+                        let mut hi = 0x00;
+                        match parse_u16(cmd[1]) {
+                            Ok(res) => lo = res,
+                            Err(err) => eprintln!("ParseError: {}", err),
+                        }
+
+                        match parse_u16(cmd[2]) {
+                            Ok(res) => hi = res,
+                            Err(err) => eprintln!("ParseError: {}", err),
+                        }
+                        if lo > hi {
+                            let tmp = lo;
+                            lo = hi;
+                            hi = tmp;
+                        }
+                        bus.mem_print_range(lo, hi);
+                    }
+                    let _ = input!();
+                },
                 _ => println!("\"{}\" is not recognized as a command", cmd[0]),
             }
         }
 
-        /*
-        while halt {
-            let line = input!("Program finished! Do you want to exit it?\n\n[y/n]\n\n").to_lowercase();
-            let cmd = line.as_str().split_whitespace().collect::<Vec<_>>();
-
-            if !cmd.is_empty() {
-                match cmd[0] {
-                    "yes" | "y" => running = false,
-                    "no" | "n" => halt = false,
-                    _ => (),
-                }
-            }
-        }
-        */
     }
 
     clear();
@@ -159,7 +181,14 @@ fn main() {
                                     }
                                 }
                             },
-                            _ => run_all(&mut CPU::default(), &mut Bus::from_file(cmd[1])),
+                            _ => {
+
+                                let fname = cmd[1].split(".").collect::<Vec<_>>()[0];
+                                match assemble(cmd[1], fname) {
+                                    Ok(_) =>   run_all(&mut CPU::default(), &mut Bus::from_file(fname)),
+                                    Err(err) => panic!("{}", err),
+                                }
+                            }
                         }
                     }
                 }

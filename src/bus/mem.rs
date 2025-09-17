@@ -46,12 +46,16 @@ impl Memory {
         }
     }
 
-    pub fn print_program(&self) {
-        let mut i = 0xC000;
-        while i < 0xCFFF {
+    pub fn print_range(&self, lower:u16, upper:u16) {
+        let mut i = lower as usize;
+        while i < upper.into() {
             println!("{:04X} => {:02X?}", i, &self.arr[i..i+16]);
             i += 16;
         }
+    }
+
+    pub fn print_program(&self) {
+        self.print_range(0xC000, 0xCFFF);
     }
 
     pub fn write_file(&self, filename:&str) -> std::io::Result<()> {
