@@ -63,22 +63,40 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
         let line = input!("Options:\n
 [F]/[Forward]/[>]  => Go forward 1 step\n
 [S]/[Stop]/[Exit]/[|]  => Exit step by step execution\n
-[B]/[Backward]/[<] => Go back 1 step\n
+[B]/[Backward]/[<]  => Go back 1 step\n
 [P]/[Print]/[Print + range]  => Print the memory\n
 > $ "
         ).to_lowercase();
         let cmd = line.as_str().split_whitespace().collect::<Vec<_>>();
 
-        let cpu_old = cpu.clone();
-        let mem_old = bus.mem_clone();
-
         if !cmd.is_empty() {
             match cmd[0] {
                 ">" | "forward" | "f" => {
-                    if !cpu.execute(bus) { running = false; } 
-                    let diff = { Changes { memory: bus.mem_diff(mem_old), cpu: cpu.diff(cpu_old)} };
-                    changes.push(diff);
-                    step += 1;
+                    
+                    if cmd.len() >= 2 {
+                        let n = cmd[1].parse().expect("Not a valid number");
+                        let mut i = 0;
+                        while i < n && running == true {
+                            let cpu_old = cpu.clone();
+                            let mem_old = bus.mem_clone();
+
+                            running = cpu.execute(bus);
+
+                            let diff = { Changes { memory: bus.mem_diff(mem_old), cpu: cpu.diff(cpu_old)} };
+                            changes.push(diff);
+
+                            step += 1;
+                            i += 1;
+                        }
+                    }
+                    else {
+                        let cpu_old = cpu.clone();
+                        let mem_old = bus.mem_clone();
+                        running = cpu.execute(bus);
+                        let diff = { Changes { memory: bus.mem_diff(mem_old), cpu: cpu.diff(cpu_old)} };
+                        changes.push(diff);
+                        step += 1;
+                    }
                 },
                 "<" | "backward" | "b" => {
                     if step != 0 {
@@ -124,7 +142,7 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
                         }
                         bus.mem_print_range(lo, hi);
                     }
-                    let _ = input!();
+                    let _ = input!("\nPress [Enter] to continue\n");
                 },
                 _ => println!("\"{}\" is not recognized as a command", cmd[0]),
             }
@@ -164,7 +182,15 @@ fn main() {
                             "step" => {
                                 if cmd.len() < 3 { eprintln!("Please provide file name for command \"run step\""); }
                                 else {
-                                    run_step(&mut CPU::default(), &mut Bus::from_file(cmd[2]));
+                                    let fname = cmd[2]
+                                        .split("/").collect::<Vec<_>>().last().expect("REASON")
+                                        .split(".").collect::<Vec<_>>()[0];
+
+                                    let outfile = format!("bin/{fname}.bin");
+                                    match assemble(cmd[2], fname) {
+                                        Ok(_) =>   run_step(&mut CPU::default(), &mut Bus::from_file(&outfile)),
+                                        Err(err) => panic!("{}", err),
+                                    }
                                 }
                             }
                             "bin" => {
@@ -182,10 +208,13 @@ fn main() {
                                 }
                             },
                             _ => {
+                                let fname = cmd[1]
+                                    .split("/").collect::<Vec<_>>().last().expect("REASON")
+                                    .split(".").collect::<Vec<_>>()[0];
 
-                                let fname = cmd[1].split(".").collect::<Vec<_>>()[0];
+                                let outfile = format!("bin/{fname}.bin");
                                 match assemble(cmd[1], fname) {
-                                    Ok(_) =>   run_all(&mut CPU::default(), &mut Bus::from_file(fname)),
+                                    Ok(_) =>   run_all(&mut CPU::default(), &mut Bus::from_file(&outfile)),
                                     Err(err) => panic!("{}", err),
                                 }
                             }
