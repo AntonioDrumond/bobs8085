@@ -11,33 +11,15 @@ use std::io::prelude::*;
 
 #[derive(Debug)]
 pub enum AssemblerError {
-    UnknownName(String),
-    UnknownInstruction(String),
-    InvalidInstructionArgument(String),
-    InvalidInstructionFormat,
-    InvalidValueFormat(String),
-    UnknownRegister(String),
-    LabelNotDefined(String),
-    MissingNewLine,
-    UnexpectedToken,
-    InvalidCharacter(char),
-    SyntaxError(String)
+    SyntaxError(String),
+    SemanticError(String)
 }
 
-impl fmt::Dislplay for AssemblerError {
-    fn fmt(&self, f: &mut fmt::Fomatter) -> fmt::Result {
+impl fmt::Display for AssemblerError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::UnknownName(content) => write!(f, ""),
-            Self::UnknownInstruction(content) => write!(f, ""),
-            Self::InvalidInstructionArgument(content) => write!(f, ""),
-            Self::InvalidInstructionFormat => write!(f, ""),
-            Self::InvalidValueFormat(content) => write!(f, ""),
-            Self::UnknownRegister(content) => write!(f, ""),
-            Self::LabelNotDefined(content) => write!(f, ""),
-            Self::MissingNewLine => write!(f, ""),
-            Self::UnexpectedToken => write!(f, ""),
-            Self::InvalidCharacter(content) => write!(f, ""),
-            Self::SyntaxError(content) => write!(f, "")
+            Self::SyntaxError(content) => write!(f, "Syntax Error: {content}"),
+            Self::SemanticError(content) => write!(f, "Semantic Error: {content}"),
         }
     }
 }
@@ -49,7 +31,7 @@ pub fn assemble(input_path: &str, output_name: &str) -> Result<(), Box<dyn std::
     let mut input = File::open(input_path)?;
     let mut contents = String::new();
     input.read_to_string(&mut contents)?;
-    let tokens = tokenize(&contents);
+    let tokens = tokenize(&contents)?;
     println!("{tokens:?}");
     let machine_code = parse(tokens)?;
     let mut output = File::create(format!("bin/{output_name}.bin"))?;
