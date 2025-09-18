@@ -1,73 +1,58 @@
+use crate::assembler::AssemblerError;
 use super::token::Token;
 
-/**
- * Basic lexing algorithm
- * No test with characters outside of ASCII table were made
- * No test with control characters were intensively made
- */
+use AssemblerError::SyntaxError;
 
-fn str_to_tok(str: &str, found_inst_on_line: bool) -> (bool, Token) {
-    let mut is_inst = false;
-    let lower = str.to_lowercase();
-    let value_opt = lower
-        .strip_suffix('h')
-        .filter(|val| !val.is_empty())
-        .map(|val| val.to_string());
-
-    let token = if let Some(label) = str.strip_suffix(':') {
-        Token::LabelDeclaration(label.to_string())
-    } else if let Some(value) = value_opt {
-        Token::Value(value)
-    } else if found_inst_on_line {
-        if matches!(
-            lower.as_str(),
-            "b" | "c" | "d" | "e" | "h" | "l" | "m" | "a" | "sp" |
-            "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7"
-        ) {
-            Token::Register(lower)
-        } else {
-            Token::LabelValue(str.to_string())
+fn str_to_tok(str: &str) -> Result<Token, AssemblerError> {
+    if let Some(hex) = str.to_lowercase().strip_prefix("0x") {
+        if hex.is_empty() {
+            return Err(SyntaxError("empty hex literal"))
         }
+        return u16::from_str_radix(hex, 16)
+            .map(Token::Value)
+            .map_err(|_| Err(SyntaxError("invalid hex literal")))
     } else {
-        is_inst = true;
-        Token::Instruction(lower)
-    };
-    (is_inst, token)
-}
-
-fn flush_buffer(buf: &mut String, tokens: &mut Vec<Token>, found_inst_on_line: bool) -> bool {
-    if buf.is_empty() {
-        return false;
+        return Token::Name(str)
     }
-    let (is_inst, token) = str_to_tok(buf, found_inst_on_line);
-    tokens.push(token);
-    buf.clear();
-    is_inst
 }
 
-pub fn tokenize(buffer: &str) -> Vec<Token> {
+fn flush_buffer(buf: &mut String, tokens: &mut Vec<Token>) -> Result<(), AssemblerError> {
+    if !buf.is_empty() {
+        tokens.push(str_to_tok(buf)?);
+        buf.clear();
+    }
+}
+
+pub fn tokenize(buffer: &str) -> Result<Vec<Token>, Box<dyn std::error::Error>> {
     let mut tokens: Vec<Token> = Vec::new();
     let mut buf = String::new();
-    let mut found_inst_on_line = false;
     for line in buffer.lines() {
         let mut chars = line.chars().peekable();
         while let Some(c) = chars.next() {
             match c {
                 ';' => break,
-                '/' if chars.peek() == Some(&'/') => break,
+                '/' => { 
+                    if chars.peek() == Some(&'/') {
+                        break;
+                    } else {
+                        Err(SyntaxError(format!("invalid character: {c}")))
+                    }
+                }
                 ',' => {
-                    found_inst_on_line |= flush_buffer(&mut buf, &mut tokens, found_inst_on_line);
+                    flush_buffer(&mut buf, &mut tokens);
                     tokens.push(Token::Comma);
                 }
-                c if c.is_whitespace() => {
-                    found_inst_on_line |= flush_buffer(&mut buf, &mut tokens, found_inst_on_line)
+                ':' => {
+                    flush_buffer(&mut buf, &mut tokens);
+                    tokens.push(Token::Colon);
                 }
+                c if c.is_whitespace() => flush_buffer(&mut buf, &mut tokens),
+                c if !c.is_alphabetic() && !c.is_ascii_digit() => Err(SyntaxError(format!("invalid character: {c}"))),
                 _ => buf.push(c),
             }
         }
-        flush_buffer(&mut buf, &mut tokens, found_inst_on_line);
+        flush_buffer(&mut buf, &mut tokens);
         tokens.push(Token::NewLine);
-        found_inst_on_line = false;
     }
     tokens
 }

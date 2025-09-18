@@ -3,24 +3,20 @@ use std::fmt::Debug;
 
 #[derive(Clone)]
 pub enum Token {
-    Instruction(String),
-    Register(String),
-    Value(String),
-    LabelDeclaration(String),
-    LabelValue(String),
+    Name(String),
+    HexLiteral(String),
     Comma,
+    Colon,
     NewLine,
 }
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Instruction(content) => write!(f, "{}", content),
-            Self::Register(content) => write!(f, "{}", content),
-            Self::Value(content) => write!(f, "{}", content),
-            Self::LabelDeclaration(content) => write!(f, "{}", content),
-            Self::LabelValue(content) => write!(f, "{}", content),
+            Self::Name(content) => write!(f, "{content}"),
+            Self::Value(content) => write!(f, "{content}"),
             Self::Comma => write!(f, ","),
+            Self::Colon => write! (f, ":"),
             Self::NewLine => write!(f, "\\n"),
         }
     }
@@ -35,6 +31,7 @@ impl Debug for Token {
             Self::LabelDeclaration(content) => write!(f, "LABEL_DECLARATION({})", content),
             Self::LabelValue(content) => write!(f, "LABEL_VALUE({})", content),
             Self::Comma => write!(f, "COMMA"),
+            Self::Colon => write!(f, "COLON"),
             Self::NewLine => write!(f, "NEW_LINE"),
         }
     }
