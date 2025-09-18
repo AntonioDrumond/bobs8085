@@ -638,14 +638,15 @@ impl CPU {
         if self.sp <= 0xC000 {
             self.sp = 0xD000;
         }
-
-        let value = (inst >> 3) & 0x7;
-
         self.sp -= 2;
         bus.mem_set16_reverse(self.sp, self.pc + 2);
 
-        self.pc =(value as u16) << 3;
-        println!("pc = {}", self.pc);
+        if inst >= 0xC7 {
+            self.pc = (inst as u16) & 0b0011_1000;
+        }
+        else if inst >= 0x24 && inst <= 0x3C {
+            self.pc = (inst as u16) & 0b0011_1100;
+        }
     }
 
     pub(super) fn ana(&mut self, bus: &mut Bus, inst: u8) {
@@ -771,4 +772,47 @@ impl CPU {
         bus.io_set8(addr, self.a);
     }
 
+    pub(super) fn ei(&mut self) {
+        self.int = true;
+    }
+
+    pub(super) fn di(&mut self) {
+       self.int = false;
+    }
+
+    pub(super) fn rim(&mut self) {
+
+        let mut val: u8 = 0x00;
+
+        if self.sid { val |= 0b1000_0000; }
+
+        if self.pending_int.rst7_5 { val |= 0b0100_0000; }
+        if self.pending_int.rst6_5 { val |= 0b0010_0000; }
+        if self.pending_int.rst5_5 { val |= 0b0001_0000; }
+
+        if self.int { val |= 0b0000_1000; }
+
+        if self.masked_int.rst7_5 { val |= 0b0000_0100; }
+        if self.masked_int.rst6_5 { val |= 0b0000_0010; }
+        if self.masked_int.rst5_5 { val |= 0b0000_0001; }
+
+        self.a = val;
+    }
+
+    pub(super) fn sim(&mut self) {
+        
+        if (self.a & 0b0100_0000) != 0 {
+            self.sod = (self.a & 0b1000_0000) != 0;
+        }
+
+        if (self.a & 0b0001_0000) != 0 {
+            self.pending_int.rst7_5 = false;
+        }
+
+        if (self.a & 0b0000_1000) != 0 {
+            self.masked_int.rst7_5 = (self.a & 0b0000_0100) != 0;
+            self.masked_int.rst6_5 = (self.a & 0b0000_0010) != 0;
+            self.masked_int.rst5_5 = (self.a & 0b0000_0001) != 0;
+        }
+    }
 }
