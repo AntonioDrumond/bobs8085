@@ -6,6 +6,14 @@ pub fn clear() {
     let _ = io::stdout().flush();
 }
 
+pub fn parse_u16(s: &str) -> Result<u16, std::num::ParseIntError> {
+    if let Some(hex_str) = s.strip_prefix("0x") {
+        u16::from_str_radix(hex_str, 16)
+    } else {
+        s.parse::<u16>()
+    }
+}
+
 #[macro_export]
 macro_rules! input {
     ($a:ident) => {

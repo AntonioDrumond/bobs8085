@@ -15,17 +15,20 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             asset_name_suffix: "linux-x86_64.tar.gz"
-            binary_name: "intel-8085-sim"
+            binary_name: "bobs8085"
+            osname: "linux"
 
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             asset_name_suffix: "windows-x86_64.zip"
-            binary_name: "intel-8085-sim.exe"
+            binary_name: "bobs8085.exe"
+            osname: "windows"
 
-          # - os: macos-latest
-            # target: x86_64-apple-darwin
-            # asset_name_suffix: "macos-x86_64.tar.gz"
-            # binary_name: "intel-8085-sim"
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            asset_name_suffix: "macos-x86_64.tar.gz"
+            binary_name: "bobs8085"
+            osname: "macos"
 
     steps:
       - name: Checkout code
@@ -47,18 +50,18 @@ jobs:
           if [ "${{ runner.os }}" == "Windows" ]; then
             cp "target/${{ matrix.target }}/release/${{ matrix.binary_name }}" "staging/"
             cd staging
-            7z a "../release-asset.zip" *
+            7z a "../bobs8085-${{ matrix.osname }}.zip" *
           else
             cp "target/${{ matrix.target }}/release/${{ matrix.binary_name }}" "staging/"
             cd staging
-            tar czf "../release-asset.tar.gz" *
+            tar czf "../bobs8085-${{ matrix.osname }}.tar.gz" *
           fi
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-asset-${{ matrix.target }}
-          path: release-asset.*
+          name: bobs8085-${{ matrix.target }}-${{ matrix.osname }}
+          path: bobs8085-*
 
   release:
     name: Create Release

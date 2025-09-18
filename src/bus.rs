@@ -83,6 +83,10 @@ impl Bus {
         self.mem.print();
     }
 
+    pub fn mem_print_range(&self, lower:u16, upper:u16) {
+        self.mem.print_range(lower, upper);
+    }
+
     pub fn mem_print_program(&self) {
         self.mem.print_program();
     }
