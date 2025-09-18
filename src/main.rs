@@ -175,12 +175,21 @@ fn main() {
                 "exit" | "q" | "quit" => break,
                 "cls" | "clear" => utils::clear(),
                 "h" | "help" => utils::help_simulator(),
+                "assemble" => {
+                    if cmd.len() < 3 { eprintln!("Please provide a input file and an output file for command \"assemble\""); }
+                    else {
+                        match assemble(cmd[1], cmd[2]) {
+                            Ok(()) => println!("Binary file saved at \"bin/{}.bin\"", cmd[2]),
+                            Err(err) => panic!("{}", err),
+                        }
+                    }
+                }
                 "run" => {
-                    if cmd.len() < 2 { eprintln!("Please provide file name for command \"run\""); }
+                    if cmd.len() < 2 { eprintln!("Please provide a file name for command \"run\""); }
                     else {
                         match cmd[1] {
                             "step" => {
-                                if cmd.len() < 3 { eprintln!("Please provide file name for command \"run step\""); }
+                                if cmd.len() < 3 { eprintln!("Please provide a file name for command \"run step\""); }
                                 else {
                                     let fname = cmd[2]
                                         .split("/").collect::<Vec<_>>().last().expect("REASON")
@@ -194,11 +203,11 @@ fn main() {
                                 }
                             }
                             "bin" => {
-                                if cmd.len() < 3 { eprintln!("Please provide file name for command \"run bin\""); }
+                                if cmd.len() < 3 { eprintln!("Please provide a file name for command \"run bin\""); }
                                 else {
                                     match cmd[2] {
                                         "step" => {
-                                            if cmd.len() < 4 { eprintln!("Please provide file name for command \"run bin step\""); }
+                                            if cmd.len() < 4 { eprintln!("Please provide a file name for command \"run bin step\""); }
                                             else {
                                                 run_step(&mut CPU::default(), &mut Bus::from_file(cmd[3]));
                                             }
