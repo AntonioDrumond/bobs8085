@@ -85,10 +85,13 @@ impl Memory {
     
     pub fn read_dump(&mut self, filename:&str) -> std::io::Result<()> {
         let mut file = File::open(filename)?;
-        let mut i = 0;
-        while i < self.arr.len()-1 {
-            file.read_exact(&mut self.arr[i..i+16])?;
-            i+=16;
+        let len = file.metadata().unwrap().len() as usize;
+
+        if len == 0xFFFF + 1 {
+            file.read(&mut self.arr[0x0000..0xFFFF+1])?;
+        }
+        else {
+            file.read(&mut self.arr[0xC000..0xC000+len])?;
         }
         Ok(())
     }
