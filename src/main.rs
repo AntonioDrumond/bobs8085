@@ -1,18 +1,20 @@
-mod assembler;
-mod bus;
-mod changes;
-mod cpu;
+mod lib;
 mod utils;
 
 use std::io;
 use std::io::Write;
 
-use crate::assembler::assemble;
-use crate::bus::Bus;
-use crate::changes::Changes;
-use crate::cpu::CPU;
-use crate::utils::clear;
-use crate::utils::parse_u16;
+use bobs8085::*;
+
+use crate::{
+    utils::{
+        clear,
+        parse_u16,
+    },
+    lib::{
+        Simulator,
+    },
+};
 
 fn run_all(cpu: &mut CPU, bus: &mut Bus) {
     cpu.set_pc(0xC000);

@@ -45,7 +45,7 @@ impl fmt::Display for AssemblerError {
 impl Error for AssemblerError {}
 
 #[allow(dead_code, unused_variables)]
-pub fn assemble(input_path: &str, output_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub fn assemble_program (input_path: &str, output_name: &str) -> Result<(), Box<dyn std::error::Error>> {
     let mut input = File::open(input_path)?;
     let mut contents = String::new();
     input.read_to_string(&mut contents)?;

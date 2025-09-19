@@ -1,14 +1,31 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+pub mod assembler;
+pub mod bus;
+pub mod changes;
+pub mod cpu;
+
+use std::{
+    io,
+    io::Write,
+};
+
+use crate::{
+    assembler::assemble_program,
+    bus::Bus,
+    changes::Changes,
+    cpu::CPU,
+};
+
+pub struct Simulator {
+    pub cpu: CPU,
+    pub bus: Bus,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+impl Simulator {
+    
 }
+
+
+pub fn assemble(input_path: &str, output_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    assemble_program(input_path, output_name)
+}
+
