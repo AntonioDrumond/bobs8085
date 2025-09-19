@@ -1,11 +1,12 @@
-
-//Fibonacci Series Generation
-//To run the Program simply load at memory location C050=01,C051=01
-START: 
-                             MVI C,09H		//Counter
+					START: 
+							 MVI A,01h
+							 STA c050h
+							 STA c051h
+							 MVI A,0h
+                             MVI C,09h		//Counter
                              
-                             LXI H,C050H                            	//Memory Pointer
-X: 
+                             LXI H,C050h                            	//Memory Pointer
+					X: 
                              MOV A,M
                              INX H
                              MOV B,M
@@ -17,5 +18,5 @@ X:
                              DCR C
                              JNZ X
                              
-                             
-                             RST 1
+                             HLT
+

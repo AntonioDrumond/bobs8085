@@ -6,6 +6,8 @@ This repository's goal is to build an accurate Intel 8085 simulator, with both t
 ---
 
 ## Compilation
++ To compile this project, run this command from the repository's root:
 ```sh
-    cargo 
+    cargo build --release
 ```
++ The binary can be found in `target/release/bobs8085`
