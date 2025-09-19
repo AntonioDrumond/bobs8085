@@ -1,6 +1,8 @@
-use crate::assembler::AssemblerError;
 use super::token::*;
+use crate::assembler::AssemblerError;
+use core::slice::Iter;
 use std::collections::{HashMap, VecDeque};
+use std::iter::Peekable;
 
 /// Represents the parser's current expectation for the next token
 #[derive(Debug)]
@@ -27,8 +29,9 @@ enum State {
     Append,
 }
 
-struct Parser {
-    tokens: Vec<Token>,
+struct Parser<'a> {
+    iterator: Peekable<Iter<'a, Token>>,
+    last_token: Option<&'a Token>,
     state_queue: VecDeque<State>,
     buffer: Vec<u8>,
     /// The paritally assembled bytes for the current instruction
@@ -43,10 +46,11 @@ struct Parser {
     alloc_lable: bool,
 }
 
-impl Parser {
-    fn new(tokens: Vec<Token>) -> Self {
+impl<'a> Parser<'a> {
+    fn new(tokens: &'a Vec<Token>) -> Self {
         Parser {
-            tokens: tokens,
+            iterator: tokens.iter().peekable(),
+            last_token: None,
             state_queue: VecDeque::from([State::Search]),
             next_bytes: 0,
             buffer: Vec::new(),
@@ -64,12 +68,16 @@ impl Parser {
     }
 
     fn first_pass(&mut self) -> Result<(), AssemblerError> {
-        let tokens = self.tokens.clone();
-        for token in tokens {
+        while let Some(token) = self.iterator.next() {
             if let Some(state) = self.state_queue.pop_front() {
                 self.process_token(token, state)?;
-            } else if !matches!(token, Token::NewLine) {
-                return Err(AssemblerError::SemanticError(format!("expected new line, found {}", Token::name_of(&token))));
+                self.last_token = Some(token);
+            } else if !matches!(token.token_type(), TokenType::NewLine) {
+                return Err(AssemblerError::SemanticError(
+                    format!("expected new line, found \"{}\"", Token::type_of(&token)),
+                    Some(token.line()),
+                    Some(token.column()),
+                ));
             }
         }
         Ok(())
@@ -81,26 +89,42 @@ impl Parser {
                 self.buffer[*pos] = label_address as u8;
                 self.buffer[*pos + 1] = (label_address >> 8) as u8;
             } else {
-                return Err(AssemblerError::SyntaxError(format!("unknown label {}", label.to_string())));
+                return Err(AssemblerError::SemanticError(
+                    format!("unknown label \"{}\"", label.to_string()),
+                    None,
+                    None,
+                ));
             }
         }
         Ok(())
     }
 
     /// Main state machine logic for processing a single token.
-    fn process_token(&mut self, token: Token, state: State) -> Result<(), AssemblerError> {
+    fn process_token(&mut self, token: &Token, state: State) -> Result<(), AssemblerError> {
         match state {
             State::Search => self.handle_search(token)?,
             State::Comma => {
-                if !matches!(token, Token::Comma) {
-                    return Err(AssemblerError::SyntaxError(format!("expected ',', found {}", Token::name_of(&token))));
+                if !matches!(token.token_type(), TokenType::Comma) {
+                    return Err(AssemblerError::SyntaxError(
+                        format!("expected \",\", found \"{}\"", token.lexeme()),
+                        Some(token.line()),
+                        Some(token.column()),
+                    ));
                 }
                 return Ok(());
             }
             State::Colon => {
-                if !matches!(token, Token::Colon) {
-                    return Err(AssemblerError::SemanticError(format!("expected ':' after label name, found {}", Token::name_of(&token))))
+                if !matches!(token.token_type(), TokenType::Colon) {
+                    return Err(AssemblerError::SyntaxError(
+                        format!(
+                            "expected \":\" after label name, found \"{}\"",
+                            token.lexeme()
+                        ),
+                        Some(token.line()),
+                        Some(token.column()),
+                    ));
                 }
+                self.state_queue.push_back(State::Search);
                 return Ok(());
             }
             State::SrcReg => self.handle_register_arg(token, 0, &encode_arg3)?,
@@ -114,74 +138,162 @@ impl Parser {
         Ok(())
     }
 
-    fn handle_search(&mut self, token: Token) -> Result<(), AssemblerError> {
-        match token {
-            Token::Name(ref content) => {
-                if let Some((op, states_opt)) = encode_inst(&content) {
+    fn handle_search(&mut self, token: &Token) -> Result<(), AssemblerError> {
+        match token.token_type() {
+            TokenType::Name => {
+                if let Some((op, states_opt)) = encode_inst(token.lexeme()) {
+                    if let Some(next_tok) = self.iterator.peek() {
+                        if matches!(next_tok.token_type(), TokenType::Colon) {
+                            return Err(AssemblerError::SemanticError(
+                                format!(
+                                    "label name \"{}\" is a reserved mnemonic, nice try nerd",
+                                    token.lexeme(),
+                                ),
+                                Some(token.line()),
+                                Some(token.column()),
+                            ));
+                        }
+                    }
+
                     if let Some(states) = states_opt {
                         self.state_queue.extend(states);
                     }
                     self.next_bytes = op as u32;
                     self.state_queue.push_back(State::Append);
                 } else {
-                    self.labels.insert(content.to_string(), self.address);
+                    self.labels.insert(token.lexeme().to_string(), self.address);
                     self.state_queue.push_back(State::Colon);
                 }
             }
-            Token::NewLine => self.state_queue.push_back(State::Search),
-            _ => return Err(AssemblerError::SemanticError(format!("expected an instruction or label name, found {}", Token::name_of(&token)))),
+            TokenType::HexLiteral => {
+                if let Some(next_tok) = self.iterator.peek() {
+                    if matches!(next_tok.token_type(), TokenType::Colon) {
+                        return Err(AssemblerError::SyntaxError(
+                            format!(
+                                "label name \"{}\" fits as a valid hex literal, choose better names",
+                                token.lexeme()
+                            ),
+                            Some(token.line()),
+                            Some(token.column()),
+                        ));
+                    }
+                }
+            }
+            TokenType::NewLine => self.state_queue.push_back(State::Search),
+            _ => {
+                return Err(AssemblerError::SemanticError(
+                    format!(
+                        "expected an instruction or label name, found {} \"{}\"",
+                        Token::type_of(token),
+                        token.lexeme()
+                    ),
+                    Some(token.line()),
+                    Some(token.column()),
+                ));
+            }
         }
         Ok(())
     }
 
     fn handle_register_arg(
         &mut self,
-        token: Token,
+        token: &Token,
         shift: u32,
-        encoder: &dyn Fn(&str) -> Result<u8, AssemblerError>,
+        encoder: &dyn Fn(&Token) -> Result<u8, AssemblerError>,
     ) -> Result<(), AssemblerError> {
-        if let Token::Name(content) = token {
-            let register = encoder(&content)?;
+        if matches!(token.token_type(), TokenType::Name) {
+            let register = encoder(token)?;
             self.next_bytes |= (register as u32) << shift;
             return Ok(());
         } else {
-            return Err(AssemblerError::SyntaxError(format!("expected a register, found {}", Token::name_of(&token))));
+            return Err(AssemblerError::SyntaxError(
+                format!(
+                    "expected a register, found {} \"{}\"",
+                    Token::type_of(&token),
+                    token.lexeme()
+                ),
+                Some(token.line()),
+                Some(token.column()),
+            ));
         }
     }
 
-    fn handle_immediate(&mut self, token: Token, state: State) -> Result<(), AssemblerError> {
-        match token {
-            Token::Name(ref content) => {
+    fn handle_immediate(&mut self, token: &Token, state: State) -> Result<(), AssemblerError> {
+        match token.token_type() {
+            TokenType::Name => {
                 if matches!(state, State::Imm16) {
                     self.unresolved_labels
-                        .push((self.buffer.len() + 1, content.to_string()));
+                        .push((self.buffer.len() + 1, token.lexeme().to_string()));
                     self.alloc_lable = true;
                     self.next_bytes |= 0;
                 } else {
-                    return Err(AssemblerError::SemanticError(format!("expected a hex value, found {}", Token::name_of(&token))));
+                    return Err(AssemblerError::SemanticError(
+                        format!(
+                            "expected a hex value, found {} \"{}\"",
+                            Token::type_of(token),
+                            token.lexeme()
+                        ),
+                        Some(token.line()),
+                        Some(token.column()),
+                    ));
                 }
             }
-            Token::HexLiteral(content) => {
-                let max_val = if matches!(state, State::Imm8) {
+            TokenType::HexLiteral => {
+                let max_val: u16 = if matches!(state, State::Imm8) {
                     0xFF
                 } else {
                     0xFFFF
                 };
-                if content > max_val {
-                    return Err(AssemblerError::SyntaxError(format!("value {content} should be less than {max_val}")));
+                let treated = token
+                    .lexeme()
+                    .strip_prefix("0x")
+                    .or_else(|| token.lexeme().strip_suffix('H'))
+                    .or_else(|| token.lexeme().strip_suffix('h'))
+                    .unwrap();
+                let val = match u16::from_str_radix(treated, 16) {
+                    Ok(v) => v,
+                    Err(_) => {
+                        return Err(AssemblerError::SyntaxError(
+                            format!("invalid hex literal \"{}\"", token.lexeme()),
+                            Some(token.line()),
+                            Some(token.column()),
+                        ));
+                    }
+                };
+                if val > max_val {
+                    return Err(AssemblerError::SemanticError(
+                        format!(
+                            "value {} should be at most {}",
+                            token.lexeme(),
+                            format!("0x{:x}", max_val)
+                        ),
+                        Some(token.line()),
+                        Some(token.column()),
+                    ));
                 }
-                self.next_bytes |= (content as u32) << 8;
+                self.next_bytes |= (val as u32) << 8;
             }
             _ => {
-                return Err(AssemblerError::SemanticError(format!("expected hex value or label name, found {}", Token::name_of(&token))));
+                return Err(AssemblerError::SemanticError(
+                    format!(
+                        "expected hex value or label name, found \"{}\"",
+                        token.lexeme()
+                    ),
+                    Some(token.line()),
+                    Some(token.column()),
+                ));
             }
         }
         Ok(())
     }
 
-    fn handle_append(&mut self, token: Token) -> Result<(), AssemblerError> {
-        if !matches!(token, Token::NewLine) {
-            return Err(AssemblerError::SyntaxError(format!("expected new line after instruction")));
+    fn handle_append(&mut self, token: &Token) -> Result<(), AssemblerError> {
+        if !matches!(token.token_type(), TokenType::NewLine) {
+            return Err(AssemblerError::SyntaxError(
+                format!("expected new line after instruction"),
+                self.last_token.map(|t| t.line()),
+                self.last_token.map(|t| t.column()),
+            ));
         }
 
         let old_len = self.buffer.len();
@@ -205,24 +317,32 @@ impl Parser {
     }
 }
 
-pub fn parse(tokens: Vec<Token>) -> Result<Vec<u8>, AssemblerError> {
+pub fn parse(tokens: &Vec<Token>) -> Result<Vec<u8>, AssemblerError> {
     Parser::new(tokens).parse()
 }
 
-fn parse_arg(value: &str) -> Result<u8, AssemblerError> {
-    match u8::from_str_radix(value, 10) {
+fn parse_arg(token: &Token) -> Result<u8, AssemblerError> {
+    match u8::from_str_radix(token.lexeme(), 10) {
         Ok(arg) => {
             if arg > 0b111 {
-                return Err(AssemblerError::SemanticError(format!("unknown RST argument {}", arg)));
+                return Err(AssemblerError::SemanticError(
+                    format!("unknown RST argument \"{}\"", arg),
+                    Some(token.line()),
+                    Some(token.column()),
+                ));
             }
-            return Ok(arg)
+            return Ok(arg);
         }
-        Err(_e) => Err(AssemblerError::SemanticError(format!("unknown RST argument {}", value))),
+        Err(_e) => Err(AssemblerError::SemanticError(
+            format!("unknown RST argument \"{}\"", token.lexeme()),
+            Some(token.line()),
+            Some(token.column()),
+        )),
     }
 }
 
-fn encode_arg3(arg: &str) -> Result<u8, AssemblerError> {
-    match arg {
+fn encode_arg3(token: &Token) -> Result<u8, AssemblerError> {
+    match token.lexeme().to_lowercase().as_str() {
         "b" => Ok(0),
         "c" => Ok(1),
         "d" => Ok(2),
@@ -231,23 +351,31 @@ fn encode_arg3(arg: &str) -> Result<u8, AssemblerError> {
         "l" => Ok(5),
         "m" => Ok(6),
         "a" => Ok(7),
-        _ => Err(AssemblerError::SemanticError(format!("unknown register {}", arg)))
+        _ => Err(AssemblerError::SemanticError(
+            format!("unknown register \"{}\"", token.lexeme()),
+            Some(token.line()),
+            Some(token.column()),
+        )),
     }
 }
 
-fn encode_arg2(arg: &str) -> Result<u8, AssemblerError> {
-    match arg {
+fn encode_arg2(token: &Token) -> Result<u8, AssemblerError> {
+    match token.lexeme().to_lowercase().as_str() {
         "b" => Ok(0),
         "d" => Ok(1),
         "h" => Ok(2),
         "sp" => Ok(3),
-        _ => Err(AssemblerError::SemanticError(format!("unknown register {}", arg))),
+        _ => Err(AssemblerError::SemanticError(
+            format!("unknown register \"{}\"", token.lexeme()),
+            Some(token.line()),
+            Some(token.column()),
+        )),
     }
 }
 
 fn encode_inst(inst: &str) -> Option<(u8, Option<Vec<State>>)> {
     use State::{Comma, DestReg, Imm8, Imm16, RegPair, RstImm, SrcReg};
-    match inst {
+    match inst.to_lowercase().as_str() {
         "mov" => Some((0x40, Some(vec![DestReg, Comma, SrcReg]))),
         "mvi" => Some((0x06, Some(vec![DestReg, Comma, Imm8]))),
         "lxi" => Some((0x01, Some(vec![RegPair, Comma, Imm16]))),

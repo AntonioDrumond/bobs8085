@@ -1,11 +1,13 @@
 use std::io;
 use std::io::Write;
 
+#[allow(dead_code)]
 pub fn clear() {
     print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
     let _ = io::stdout().flush();
 }
 
+#[allow(dead_code)]
 pub fn parse_u16(s: &str) -> Result<u16, std::num::ParseIntError> {
     if let Some(hex_str) = s.strip_prefix("0x") {
         u16::from_str_radix(hex_str, 16)
@@ -20,23 +22,19 @@ macro_rules! input {
         std::io::stdin().read_line(&mut $a).unwrap();
     };
 
-    () => {
-        {
-            let mut line = String::new();
-            std::io::stdin().read_line(&mut line).unwrap();
-            line
-        }
-    };
+    () => {{
+        let mut line = String::new();
+        std::io::stdin().read_line(&mut line).unwrap();
+        line
+    }};
 
-    ($t:expr) => {
-        {
-            print!("{}", $t);
-            let _ = io::stdout().flush();
-            let mut line = String::new();
-            std::io::stdin().read_line(&mut line).unwrap();
-            line
-        }
-    };
+    ($t:expr) => {{
+        print!("{}", $t);
+        let _ = io::stdout().flush();
+        let mut line = String::new();
+        std::io::stdin().read_line(&mut line).unwrap();
+        line
+    }};
 
     ($t:expr, $a:ident) => {
         print!("{}", $t);
@@ -45,6 +43,7 @@ macro_rules! input {
     };
 }
 
+#[allow(dead_code)]
 #[rustfmt::skip]
 pub fn help_simulator() {
     println!();
