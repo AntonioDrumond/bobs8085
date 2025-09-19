@@ -9,15 +9,14 @@ fn str_to_tok(str: &str, line: usize, column: usize) -> Result<Token, AssemblerE
         .or_else(|| str.strip_suffix('H'))
         .or_else(|| str.strip_suffix('h'))
         .unwrap_or("");
-
     if treated.len() <= 4 && u16::from_str_radix(treated, 16).is_ok() {
-        return Ok(Token::new_hex_literal(
+        Ok(Token::new_hex_literal(
             str.to_string(),
             line + 1,
             column + 1,
-        ));
+        ))
     } else {
-        return Ok(Token::new_name(str.to_string(), line + 1, column + 1));
+        Ok(Token::new_name(str.to_string(), line + 1, column + 1))
     }
 }
 
@@ -38,8 +37,10 @@ pub fn tokenize(buffer: &str) -> Result<Vec<Token>, AssemblerError> {
     let mut tokens: Vec<Token> = Vec::new();
     let mut buf = String::new();
     let mut lines = buffer.lines().enumerate().peekable();
+    #[allow(clippy::while_let_on_iterator)]
     while let Some((i, l)) = lines.next() {
         let mut chars = l.chars().enumerate().peekable();
+        #[allow(clippy::while_let_on_iterator)]
         while let Some((j, c)) = chars.next() {
             match c {
                 ';' => break,
@@ -63,7 +64,7 @@ pub fn tokenize(buffer: &str) -> Result<Vec<Token>, AssemblerError> {
                     tokens.push(Token::new_colon(i + 1, j + 1));
                 }
                 c if c.is_whitespace() => flush_buffer(&mut buf, &mut tokens, i, j)?,
-                c if !c.is_alphabetic() && !c.is_ascii_digit() => {
+                c if !c.is_alphabetic() && !c.is_ascii_digit() && c != '_' => {
                     return Err(SyntaxError(
                         format!("invalid character \"{c}\""),
                         Some(i),
