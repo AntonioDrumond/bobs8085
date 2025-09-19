@@ -1,18 +1,18 @@
 mod assembler;
 mod bus;
+mod changes;
 mod cpu;
 mod utils;
-mod changes;
 
-use std::io::Write;
 use std::io;
+use std::io::Write;
 
-use crate::cpu::CPU;
-use crate::changes::Changes;
+use crate::assembler::assemble;
 use crate::bus::Bus;
+use crate::changes::Changes;
+use crate::cpu::CPU;
 use crate::utils::clear;
 use crate::utils::parse_u16;
-use crate::assembler::assemble;
 
 fn run_all(cpu: &mut CPU, bus: &mut Bus) {
     cpu.set_pc(0xC000);
@@ -34,10 +34,9 @@ fn run_all(cpu: &mut CPU, bus: &mut Bus) {
 }
 
 fn run_step(cpu: &mut CPU, bus: &mut Bus) {
-
     cpu.set_pc(0xC000);
 
-    let mut changes : Vec<Changes> = vec![];
+    let mut changes: Vec<Changes> = vec![];
     let mut start = Changes::default();
     start.cpu.pc = 0xC000;
     changes.push(start);
@@ -46,7 +45,6 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
     let mut step = 0;
 
     while running {
-        
         clear();
         println!("step: {step}\n");
         cpu.print_state();
@@ -60,19 +58,20 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
             Err(e) => eprintln!("Error printing IO: {e}"),
         }
 
-        let line = input!("Options:\n
+        let line = input!(
+            "Options:\n
 [F]/[Forward]/[>]  => Go forward 1 step\n
 [S]/[Stop]/[Exit]/[|]  => Exit step by step execution\n
 [B]/[Backward]/[<]  => Go back 1 step\n
 [P]/[Print]/[Print + range]  => Print the memory\n
 > $ "
-        ).to_lowercase();
+        )
+        .to_lowercase();
         let cmd = line.as_str().split_whitespace().collect::<Vec<_>>();
 
         if !cmd.is_empty() {
             match cmd[0] {
                 ">" | "forward" | "f" => {
-                    
                     if cmd.len() >= 2 {
                         let n = cmd[1].parse().expect("Not a valid number");
                         let mut i = 0;
@@ -82,48 +81,55 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
 
                             running = cpu.execute(bus);
 
-                            let diff = { Changes { memory: bus.mem_diff(mem_old), cpu: cpu.diff(cpu_old)} };
+                            let diff = {
+                                Changes {
+                                    memory: bus.mem_diff(mem_old),
+                                    cpu: cpu.diff(cpu_old),
+                                }
+                            };
                             changes.push(diff);
 
                             step += 1;
                             i += 1;
                         }
-                    }
-                    else {
+                    } else {
                         let cpu_old = cpu.clone();
                         let mem_old = bus.mem_clone();
                         running = cpu.execute(bus);
-                        let diff = { Changes { memory: bus.mem_diff(mem_old), cpu: cpu.diff(cpu_old)} };
+                        let diff = {
+                            Changes {
+                                memory: bus.mem_diff(mem_old),
+                                cpu: cpu.diff(cpu_old),
+                            }
+                        };
                         changes.push(diff);
                         step += 1;
                     }
-                },
+                }
                 "<" | "backward" | "b" => {
                     if step != 0 {
                         step -= 1;
                         cpu.restore(bus, &changes[step]);
+                    } else {
+                        println!("Already at the start!");
                     }
-                    else { println!("Already at the start!"); }
-
-                },
-                "|" | "stop" | "s" | "exit" => { 
+                }
+                "|" | "stop" | "s" | "exit" => {
                     clear();
                     running = false;
-                },
+                }
                 "p" | "print" => {
                     let len = cmd.len();
-                    if len == 1 { 
-                        bus.mem_print_program(); 
-                    }
-                    else if len == 2 {
+                    if len == 1 {
+                        bus.mem_print_program();
+                    } else if len == 2 {
                         let mut val = 0x00;
                         match parse_u16(cmd[1]) {
                             Ok(res) => val = res,
                             Err(err) => eprintln!("ParseError: {}", err),
                         }
-                        bus.mem_print_range(val, val+1);
-                    }
-                    else if len == 3 {
+                        bus.mem_print_range(val, val + 1);
+                    } else if len == 3 {
                         let mut lo = 0x00;
                         let mut hi = 0x00;
                         match parse_u16(cmd[1]) {
@@ -143,11 +149,10 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
                         bus.mem_print_range(lo, hi);
                     }
                     let _ = input!("\nPress [Enter] to continue\n");
-                },
+                }
                 _ => println!("\"{}\" is not recognized as a command", cmd[0]),
             }
         }
-
     }
 
     clear();
@@ -162,7 +167,6 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
         Ok(()) => println!("IO ports saved to \"./io.txt\""),
         Err(e) => eprintln!("Error printing IO: {e}"),
     }
-
 }
 
 fn main() {

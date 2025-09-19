@@ -1,4 +1,3 @@
-
 START:
     ; Initialize registers
     LXI H,DATA         ; HL -> DATA
