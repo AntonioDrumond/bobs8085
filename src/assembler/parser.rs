@@ -26,7 +26,7 @@ enum State {
     /// Special RST immediate
     RstImm,
     /// Ready to append the assembled instruction to the buffer
-    Append,
+    Append(u8),
 }
 
 struct Parser<'a> {
@@ -133,7 +133,7 @@ impl<'a> Parser<'a> {
             State::Imm8 => self.handle_immediate(token, State::Imm8)?,
             State::Imm16 => self.handle_immediate(token, State::Imm16)?,
             State::RstImm => self.handle_register_arg(token, 3, &parse_arg)?,
-            State::Append => self.handle_append(token)?,
+            State::Append(bytes) => self.handle_append(token, bytes)?,
         }
         Ok(())
     }
@@ -141,7 +141,7 @@ impl<'a> Parser<'a> {
     fn handle_search(&mut self, token: &Token) -> Result<(), AssemblerError> {
         match token.token_type() {
             TokenType::Name => {
-                if let Some((op, states_opt)) = encode_inst(token.lexeme()) {
+                if let Some((op, states)) = encode_inst(token.lexeme()) {
                     if let Some(next_tok) = self.iterator.peek() {
                         if matches!(next_tok.token_type(), TokenType::Colon) {
                             return Err(AssemblerError::SemanticError(
@@ -154,12 +154,8 @@ impl<'a> Parser<'a> {
                             ));
                         }
                     }
-
-                    if let Some(states) = states_opt {
-                        self.state_queue.extend(states);
-                    }
+                    self.state_queue.extend(states);
                     self.next_bytes = op as u32;
-                    self.state_queue.push_back(State::Append);
                 } else {
                     self.labels.insert(token.lexeme().to_string(), self.address);
                     self.state_queue.push_back(State::Colon);
@@ -287,7 +283,7 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
-    fn handle_append(&mut self, token: &Token) -> Result<(), AssemblerError> {
+    fn handle_append(&mut self, token: &Token, bytes: u8) -> Result<(), AssemblerError> {
         if !matches!(token.token_type(), TokenType::NewLine) {
             return Err(AssemblerError::SyntaxError(
                 format!("expected new line after instruction"),
@@ -304,7 +300,7 @@ impl<'a> Parser<'a> {
             self.buffer.push(0);
             self.buffer.push(0);
         } else {
-            while self.next_bytes > 0 {
+            for _ in 0..(bytes - 1) {
                 self.buffer.push(self.next_bytes as u8);
                 self.next_bytes >>= 8;
             }
@@ -373,89 +369,89 @@ fn encode_arg2(token: &Token) -> Result<u8, AssemblerError> {
     }
 }
 
-fn encode_inst(inst: &str) -> Option<(u8, Option<Vec<State>>)> {
-    use State::{Comma, DestReg, Imm8, Imm16, RegPair, RstImm, SrcReg};
+fn encode_inst(inst: &str) -> Option<(u8, Vec<State>)> {
+    use State::{Append, Comma, DestReg, Imm8, Imm16, RegPair, RstImm, SrcReg};
     match inst.to_lowercase().as_str() {
-        "mov" => Some((0x40, Some(vec![DestReg, Comma, SrcReg]))),
-        "mvi" => Some((0x06, Some(vec![DestReg, Comma, Imm8]))),
-        "lxi" => Some((0x01, Some(vec![RegPair, Comma, Imm16]))),
-        "stax" => Some((0x02, Some(vec![RegPair]))),
-        "ldax" => Some((0x0A, Some(vec![RegPair]))),
-        "sta" => Some((0x32, Some(vec![Imm16]))),
-        "lda" => Some((0x3A, Some(vec![Imm16]))),
-        "shld" => Some((0x22, Some(vec![Imm16]))),
-        "lhld" => Some((0x2A, Some(vec![Imm16]))),
-        "xchg" => Some((0xEB, None)),
-        "push" => Some((0xC5, Some(vec![RegPair]))),
-        "pop" => Some((0xC1, Some(vec![RegPair]))),
-        "xthl" => Some((0xE3, None)),
-        "sphl" => Some((0xF9, None)),
-        "inx" => Some((0x03, Some(vec![RegPair]))),
-        "dcx" => Some((0x0B, Some(vec![RegPair]))),
-        "jmp" => Some((0xC3, Some(vec![Imm16]))),
-        "jc" => Some((0xDA, Some(vec![Imm16]))),
-        "jnc" => Some((0xD2, Some(vec![Imm16]))),
-        "jz" => Some((0xCA, Some(vec![Imm16]))),
-        "jnz" => Some((0xC2, Some(vec![Imm16]))),
-        "jp" => Some((0xF2, Some(vec![Imm16]))),
-        "jm" => Some((0xFA, Some(vec![Imm16]))),
-        "jpe" => Some((0xEA, Some(vec![Imm16]))),
-        "jpo" => Some((0xE2, Some(vec![Imm16]))),
-        "pchl" => Some((0xE9, None)),
-        "call" => Some((0xCD, Some(vec![Imm16]))),
-        "cc" => Some((0xDC, Some(vec![Imm16]))),
-        "cnc" => Some((0xD4, Some(vec![Imm16]))),
-        "cz" => Some((0xCC, Some(vec![Imm16]))),
-        "cnz" => Some((0xC4, Some(vec![Imm16]))),
-        "cp" => Some((0xF4, Some(vec![Imm16]))),
-        "cm" => Some((0xFC, Some(vec![Imm16]))),
-        "cpe" => Some((0xEC, Some(vec![Imm16]))),
-        "cpo" => Some((0xE4, Some(vec![Imm16]))),
-        "ret" => Some((0xC9, None)),
-        "rc" => Some((0xD8, None)),
-        "rnc" => Some((0xD0, None)),
-        "rz" => Some((0xC8, None)),
-        "rnz" => Some((0xC0, None)),
-        "rp" => Some((0xF0, None)),
-        "rm" => Some((0xF8, None)),
-        "rpe" => Some((0xE8, None)),
-        "rpo" => Some((0xE0, None)),
-        "rst" => Some((0xC7, Some(vec![RstImm]))),
-        "in" => Some((0xDB, Some(vec![Imm8]))),
-        "out" => Some((0xD3, Some(vec![Imm8]))),
-        "inr" => Some((0x04, Some(vec![DestReg]))),
-        "dcr" => Some((0x05, Some(vec![DestReg]))),
-        "add" => Some((0x80, Some(vec![SrcReg]))),
-        "adc" => Some((0x88, Some(vec![SrcReg]))),
-        "adi" => Some((0xC6, Some(vec![Imm8]))),
-        "aci" => Some((0xCE, Some(vec![Imm8]))),
-        "dad" => Some((0x09, Some(vec![RegPair]))),
-        "sub" => Some((0x90, Some(vec![SrcReg]))),
-        "sbb" => Some((0x98, Some(vec![SrcReg]))),
-        "sui" => Some((0xD6, Some(vec![Imm8]))),
-        "sbi" => Some((0xDE, Some(vec![Imm8]))),
-        "ana" => Some((0xA0, Some(vec![SrcReg]))),
-        "xra" => Some((0xA8, Some(vec![SrcReg]))),
-        "ora" => Some((0xB0, Some(vec![SrcReg]))),
-        "cmp" => Some((0xB8, Some(vec![SrcReg]))),
-        "ani" => Some((0xE6, Some(vec![Imm8]))),
-        "xri" => Some((0xEE, Some(vec![Imm8]))),
-        "ori" => Some((0xF6, Some(vec![Imm8]))),
-        "cpi" => Some((0xFE, Some(vec![Imm8]))),
-        "rlc" => Some((0x07, None)),
-        "rrc" => Some((0x0F, None)),
-        "ral" => Some((0x17, None)),
-        "rar" => Some((0x1F, None)),
-        "cma" => Some((0x2F, None)),
-        "stc" => Some((0x37, None)),
-        "cmc" => Some((0x3F, None)),
-        "daa" => Some((0x27, None)),
-        "ei" => Some((0xFB, None)),
-        "di" => Some((0xF3, None)),
-        "nop" => Some((0x00, None)),
-        "hlt" => Some((0x76, None)),
-        "rim" => Some((0x20, None)),
-        "sim" => Some((0x30, None)),
+        "mov" => Some((0x40, vec![DestReg, Comma, SrcReg, Append(1)])),
+        "mvi" => Some((0x06, vec![DestReg, Comma, Imm8, Append(2)])),
+        "lxi" => Some((0x01, vec![RegPair, Comma, Imm16, Append(3)])),
+        "stax" => Some((0x02, vec![RegPair, Append(1)])),
+        "ldax" => Some((0x0A, vec![RegPair, Append(1)])),
+        "sta" => Some((0x32, vec![Imm16, Append(3)])),
+        "lda" => Some((0x3A, vec![Imm16, Append(3)])),
+        "shld" => Some((0x22, vec![Imm16, Append(3)])),
+        "lhld" => Some((0x2A, vec![Imm16, Append(3)])),
+        "xchg" => Some((0xEB, vec![Append(1)])),
+        "push" => Some((0xC5, vec![RegPair, Append(1)])),
+        "pop" => Some((0xC1, vec![RegPair, Append(1)])),
+        "xthl" => Some((0xE3, vec![Append(1)])),
+        "sphl" => Some((0xF9, vec![Append(1)])),
+        "inx" => Some((0x03, vec![RegPair, Append(1)])),
+        "dcx" => Some((0x0B, vec![RegPair, Append(1)])),
+        "jmp" => Some((0xC3, vec![Imm16, Append(3)])),
+        "jc" => Some((0xDA, vec![Imm16, Append(3)])),
+        "jnc" => Some((0xD2, vec![Imm16, Append(3)])),
+        "jz" => Some((0xCA, vec![Imm16, Append(3)])),
+        "jnz" => Some((0xC2, vec![Imm16, Append(3)])),
+        "jp" => Some((0xF2, vec![Imm16, Append(3)])),
+        "jm" => Some((0xFA, vec![Imm16, Append(3)])),
+        "jpe" => Some((0xEA, vec![Imm16, Append(3)])),
+        "jpo" => Some((0xE2, vec![Imm16, Append(3)])),
+        "pchl" => Some((0xE9, vec![Append(1)])),
+        "call" => Some((0xCD, vec![Imm16, Append(3)])),
+        "cc" => Some((0xDC, vec![Imm16, Append(3)])),
+        "cnc" => Some((0xD4, vec![Imm16, Append(3)])),
+        "cz" => Some((0xCC, vec![Imm16, Append(3)])),
+        "cnz" => Some((0xC4, vec![Imm16, Append(3)])),
+        "cp" => Some((0xF4, vec![Imm16, Append(3)])),
+        "cm" => Some((0xFC, vec![Imm16, Append(3)])),
+        "cpe" => Some((0xEC, vec![Imm16, Append(3)])),
+        "cpo" => Some((0xE4, vec![Imm16, Append(3)])),
+        "ret" => Some((0xC9, vec![Append(1)])),
+        "rc" => Some((0xD8, vec![Append(1)])),
+        "rnc" => Some((0xD0, vec![Append(1)])),
+        "rz" => Some((0xC8, vec![Append(1)])),
+        "rnz" => Some((0xC0, vec![Append(1)])),
+        "rp" => Some((0xF0, vec![Append(1)])),
+        "rm" => Some((0xF8, vec![Append(1)])),
+        "rpe" => Some((0xE8, vec![Append(1)])),
+        "rpo" => Some((0xE0, vec![Append(1)])),
+        "rst" => Some((0xC7, vec![RstImm, Append(1)])),
+        "in" => Some((0xDB, vec![Imm8, Append(2)])),
+        "out" => Some((0xD3, vec![Imm8, Append(2)])),
+        "inr" => Some((0x04, vec![DestReg, Append(1)])),
+        "dcr" => Some((0x05, vec![DestReg, Append(1)])),
+        "add" => Some((0x80, vec![SrcReg, Append(1)])),
+        "adc" => Some((0x88, vec![SrcReg, Append(1)])),
+        "adi" => Some((0xC6, vec![Imm8, Append(2)])),
+        "aci" => Some((0xCE, vec![Imm8, Append(2)])),
+        "dad" => Some((0x09, vec![RegPair, Append(1)])),
+        "sub" => Some((0x90, vec![SrcReg, Append(1)])),
+        "sbb" => Some((0x98, vec![SrcReg, Append(1)])),
+        "sui" => Some((0xD6, vec![Imm8, Append(2)])),
+        "sbi" => Some((0xDE, vec![Imm8, Append(2)])),
+        "ana" => Some((0xA0, vec![SrcReg, Append(1)])),
+        "xra" => Some((0xA8, vec![SrcReg, Append(1)])),
+        "ora" => Some((0xB0, vec![SrcReg, Append(1)])),
+        "cmp" => Some((0xB8, vec![SrcReg, Append(1)])),
+        "ani" => Some((0xE6, vec![Imm8, Append(2)])),
+        "xri" => Some((0xEE, vec![Imm8, Append(2)])),
+        "ori" => Some((0xF6, vec![Imm8, Append(2)])),
+        "cpi" => Some((0xFE, vec![Imm8, Append(2)])),
+        "rlc" => Some((0x07, vec![Append(1)])),
+        "rrc" => Some((0x0F, vec![Append(1)])),
+        "ral" => Some((0x17, vec![Append(1)])),
+        "rar" => Some((0x1F, vec![Append(1)])),
+        "cma" => Some((0x2F, vec![Append(1)])),
+        "stc" => Some((0x37, vec![Append(1)])),
+        "cmc" => Some((0x3F, vec![Append(1)])),
+        "daa" => Some((0x27, vec![Append(1)])),
+        "ei" => Some((0xFB, vec![Append(1)])),
+        "di" => Some((0xF3, vec![Append(1)])),
+        "nop" => Some((0x00, vec![Append(1)])),
+        "hlt" => Some((0x76, vec![Append(1)])),
+        "rim" => Some((0x20, vec![Append(1)])),
+        "sim" => Some((0x30, vec![Append(1)])),
         _ => None,
     }
 }
