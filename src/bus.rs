@@ -1,4 +1,4 @@
-mod mem;
+pub mod mem;
 mod io;
 use crate::bus::io::Io;
 use crate::bus::mem::Memory;

@@ -1,14 +1,16 @@
 mod utils;
 
-use std::io;
-use std::io::Write;
+use std::{
+    io,
+    io::Write,
+};
 
 use bobs8085::{
     changes::Changes,
     Simulator,
-    cpu::CPU,
-    bus::Bus,
-    assembler::assemble_program,
+    //cpu::CPU,
+    //bus::Bus,
+    assemble,
 };
 
 use utils::{
@@ -16,27 +18,20 @@ use utils::{
     parse_u16,
 };
 
-fn run_all(cpu: &mut CPU, bus: &mut Bus) {
-    cpu.set_pc(0xC000);
+// fn run_all(cpu: &mut CPU, bus: &mut Bus) {
+fn run_all(sim: &mut Simulator) {
+    sim.set_pc(0xC000);
     let mut running = true;
     while running {
-        running = cpu.execute(bus);
+        running = sim.execute();
     }
     println!("\nCPU State at end of program:\n");
-    cpu.print_state();
-    println!("\n");
-    match bus.mem_write_file("./memory.txt") {
-        Ok(()) => println!("Memory saved to \"./memory.txt\""),
-        Err(e) => eprintln!("Error printing memory: {e}"),
-    }
-    match bus.io_write_file("./io.txt") {
-        Ok(()) => println!("IO ports saved to \"./io.txt\""),
-        Err(e) => eprintln!("Error printing IO: {e}"),
-    }
+    sim.print_state();
 }
 
-fn run_step(cpu: &mut CPU, bus: &mut Bus) {
-    cpu.set_pc(0xC000);
+// fn run_step(cpu: &mut CPU, bus: &mut Bus) {
+fn run_step(sim: &mut Simulator) {
+    sim.set_pc(0xC000);
 
     let mut changes: Vec<Changes> = vec![];
     let mut start = Changes::default();
@@ -47,18 +42,9 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
     let mut step = 0;
 
     while running {
-        clear();
+        utils::clear();
         println!("step: {step}\n");
-        cpu.print_state();
-        println!();
-        match bus.mem_write_file("./memory.txt") {
-            Ok(()) => println!("Memory saved to \"./memory.txt\""),
-            Err(e) => eprintln!("Error printing memory: {e}"),
-        }
-        match bus.io_write_file("./io.txt") {
-            Ok(()) => println!("IO ports saved to \"./io.txt\""),
-            Err(e) => eprintln!("Error printing IO: {e}"),
-        }
+        sim.print_state();
 
         let line = input!(
             "Options:\n
@@ -78,32 +64,20 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
                         let n = cmd[1].parse().expect("Not a valid number");
                         let mut i = 0;
                         while i < n && running == true {
-                            let cpu_old = cpu.clone();
-                            let mem_old = bus.mem_clone();
+                            let (cpu_old, mem_old) = sim.clone_cpu_bus();
 
-                            running = cpu.execute(bus);
+                            running = sim.execute();
 
-                            let diff = {
-                                Changes {
-                                    memory: bus.mem_diff(mem_old),
-                                    cpu: cpu.diff(cpu_old),
-                                }
-                            };
+                            let diff = sim.get_changes(cpu_old, mem_old);
                             changes.push(diff);
 
                             step += 1;
                             i += 1;
                         }
                     } else {
-                        let cpu_old = cpu.clone();
-                        let mem_old = bus.mem_clone();
-                        running = cpu.execute(bus);
-                        let diff = {
-                            Changes {
-                                memory: bus.mem_diff(mem_old),
-                                cpu: cpu.diff(cpu_old),
-                            }
-                        };
+                        let (cpu_old, mem_old) = sim.clone_cpu_bus();
+                        running = sim.execute();
+                        let diff = sim.get_changes(cpu_old, mem_old);
                         changes.push(diff);
                         step += 1;
                     }
@@ -111,7 +85,7 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
                 "<" | "backward" | "b" => {
                     if step != 0 {
                         step -= 1;
-                        cpu.restore(bus, &changes[step]);
+                        sim.restore(&changes[step]);
                     } else {
                         println!("Already at the start!");
                     }
@@ -123,14 +97,14 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
                 "p" | "print" => {
                     let len = cmd.len();
                     if len == 1 {
-                        bus.mem_print_program();
+                        sim.print_program();
                     } else if len == 2 {
                         let mut val = 0x00;
                         match parse_u16(cmd[1]) {
                             Ok(res) => val = res,
                             Err(err) => eprintln!("ParseError: {}", err),
                         }
-                        bus.mem_print_range(val, val + 1);
+                        sim.print_mem_range(val, val+1);
                     } else if len == 3 {
                         let mut lo = 0x00;
                         let mut hi = 0x00;
@@ -148,7 +122,7 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
                             lo = hi;
                             hi = tmp;
                         }
-                        bus.mem_print_range(lo, hi);
+                        sim.print_mem_range(lo, hi);
                     }
                     let _ = input!("\nPress [Enter] to continue\n");
                 }
@@ -159,16 +133,7 @@ fn run_step(cpu: &mut CPU, bus: &mut Bus) {
 
     clear();
     println!("Program finished.\nCPU State at end of program:\n");
-    cpu.print_state();
-    println!("\n");
-    match bus.mem_write_file("./memory.txt") {
-        Ok(()) => println!("Memory saved to \"./memory.txt\""),
-        Err(e) => eprintln!("Error printing memory: {e}"),
-    }
-    match bus.io_write_file("./io.txt") {
-        Ok(()) => println!("IO ports saved to \"./io.txt\""),
-        Err(e) => eprintln!("Error printing IO: {e}"),
-    }
+    sim.print_state();
 }
 
 fn main() {
@@ -184,7 +149,7 @@ fn main() {
                 "assemble" => {
                     if cmd.len() < 3 { eprintln!("Please provide a input file and an output file for command \"assemble\""); }
                     else {
-                        match assemble_program(cmd[1], cmd[2]) {
+                        match assemble(cmd[1], cmd[2]) {
                             Ok(()) => println!("Binary file saved at \"bin/{}.bin\"", cmd[2]),
                             Err(err) => panic!("{}", err),
                         }
@@ -202,8 +167,8 @@ fn main() {
                                         .split(".").collect::<Vec<_>>()[0];
 
                                     let outfile = format!("bin/{fname}.bin");
-                                    match assemble_program(cmd[2], fname) {
-                                        Ok(_) =>   run_step(&mut CPU::default(), &mut Bus::from_file(&outfile)),
+                                    match assemble(cmd[2], fname) {
+                                        Ok(_) =>   run_step(&mut Simulator::bus_from_file(&outfile)),
                                         Err(err) => panic!("{}", err),
                                     }
                                 }
@@ -215,10 +180,10 @@ fn main() {
                                         "step" => {
                                             if cmd.len() < 4 { eprintln!("Please provide a file name for command \"run bin step\""); }
                                             else {
-                                                run_step(&mut CPU::default(), &mut Bus::from_file(cmd[3]));
+                                                run_step(&mut Simulator::bus_from_file(cmd[3]));
                                             }
                                         }
-                                        _ => run_all(&mut CPU::default(), &mut Bus::from_file(cmd[2])),
+                                        _ => run_all(&mut Simulator::bus_from_file(cmd[2])),
                                     }
                                 }
                             },
@@ -228,8 +193,8 @@ fn main() {
                                     .split(".").collect::<Vec<_>>()[0];
 
                                 let outfile = format!("bin/{fname}.bin");
-                                match assemble_program(cmd[1], fname) {
-                                    Ok(_) =>   run_all(&mut CPU::default(), &mut Bus::from_file(&outfile)),
+                                match assemble(cmd[1], fname) {
+                                    Ok(_) =>   run_all(&mut Simulator::bus_from_file(&outfile)),
                                     Err(err) => panic!("{}", err),
                                 }
                             }
