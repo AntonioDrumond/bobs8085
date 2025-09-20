@@ -1,19 +1,19 @@
-mod lib;
 mod utils;
 
 use std::io;
 use std::io::Write;
 
-use bobs8085::*;
+use bobs8085::{
+    changes::Changes,
+    Simulator,
+    cpu::CPU,
+    bus::Bus,
+    assembler::assemble_program,
+};
 
-use crate::{
-    utils::{
-        clear,
-        parse_u16,
-    },
-    lib::{
-        Simulator,
-    },
+use utils::{
+    clear,
+    parse_u16,
 };
 
 fn run_all(cpu: &mut CPU, bus: &mut Bus) {
@@ -184,7 +184,7 @@ fn main() {
                 "assemble" => {
                     if cmd.len() < 3 { eprintln!("Please provide a input file and an output file for command \"assemble\""); }
                     else {
-                        match assemble(cmd[1], cmd[2]) {
+                        match assemble_program(cmd[1], cmd[2]) {
                             Ok(()) => println!("Binary file saved at \"bin/{}.bin\"", cmd[2]),
                             Err(err) => panic!("{}", err),
                         }
@@ -202,7 +202,7 @@ fn main() {
                                         .split(".").collect::<Vec<_>>()[0];
 
                                     let outfile = format!("bin/{fname}.bin");
-                                    match assemble(cmd[2], fname) {
+                                    match assemble_program(cmd[2], fname) {
                                         Ok(_) =>   run_step(&mut CPU::default(), &mut Bus::from_file(&outfile)),
                                         Err(err) => panic!("{}", err),
                                     }
@@ -228,7 +228,7 @@ fn main() {
                                     .split(".").collect::<Vec<_>>()[0];
 
                                 let outfile = format!("bin/{fname}.bin");
-                                match assemble(cmd[1], fname) {
+                                match assemble_program(cmd[1], fname) {
                                     Ok(_) =>   run_all(&mut CPU::default(), &mut Bus::from_file(&outfile)),
                                     Err(err) => panic!("{}", err),
                                 }

@@ -2,16 +2,12 @@ pub mod assembler;
 pub mod bus;
 pub mod changes;
 pub mod cpu;
+pub mod utils;
 
-use std::{
-    io,
-    io::Write,
-};
 
 use crate::{
     assembler::assemble_program,
     bus::Bus,
-    changes::Changes,
     cpu::CPU,
 };
 
@@ -20,7 +16,20 @@ pub struct Simulator {
     pub bus: Bus,
 }
 
+impl Default for Simulator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Simulator {
+    pub fn new() -> Simulator {
+        Simulator { cpu: CPU::default(), bus: Bus::default(), }
+    }
+
+    pub fn cpu_print_state(&self) {
+        self.cpu.print_state();
+    }
     
 }
 
