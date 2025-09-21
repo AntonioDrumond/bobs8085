@@ -88,6 +88,10 @@ impl Simulator {
         self.bus.mem_get8(pos)
     }
 
+    pub fn io_get8(&self, pos: u8) -> u8 {
+        self.bus.io_get8(pos)
+    }
+
     pub fn restore(&mut self, changes: &Changes) {
         self.cpu.restore(&mut self.bus, changes);
     }
