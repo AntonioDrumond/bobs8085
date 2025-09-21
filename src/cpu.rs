@@ -78,7 +78,7 @@ impl CPU {
         bus.mem_get16_reverse(self.pc - 2)
     }
 
-    fn get_reg(&self, bus: &Bus, target: u8) -> u8 {
+    pub fn get_reg(&self, bus: &Bus, target: u8) -> u8 {
         match target {
             0 => self.b,
             1 => self.c,
@@ -90,6 +90,29 @@ impl CPU {
             7 => self.a,
             _ => panic!("Unknown target"),
         }
+    }
+
+    pub fn get_reg_pair(&self, target: u8) -> u16 {
+        let mut value: u16;
+        match target {
+            0 => {
+                value = (self.b as u16) << 8;
+                value |= self.c as u16;
+            }
+            1 => {
+                value = (self.d as u16) << 8;
+                value |= self.e as u16;
+            }
+            2 => {
+                value = (self.h as u16) << 8;
+                value |= self.l as u16;
+            }
+            3 => {
+                value = self.sp;
+            }
+            _ => panic!("Unknown target"),
+        }
+        value
     }
 
     pub fn set_reg(&mut self, bus: &mut Bus, target: u8, value: u8) {
@@ -127,27 +150,15 @@ impl CPU {
         }
     }
 
-    fn get_reg_pair(&self, target: u8) -> u16 {
-        let mut value: u16;
+    pub fn get_flag(&self, target: u8) -> bool {
         match target {
-            0 => {
-                value = (self.b as u16) << 8;
-                value |= self.c as u16;
-            }
-            1 => {
-                value = (self.d as u16) << 8;
-                value |= self.e as u16;
-            }
-            2 => {
-                value = (self.h as u16) << 8;
-                value |= self.l as u16;
-            }
-            3 => {
-                value = self.sp;
-            }
+            0 => self.s,
+            1 => self.z,
+            2 => self.ac,
+            3 => self.p,
+            4 => self.cy,
             _ => panic!("Unknown target"),
         }
-        value
     }
 
     fn update_s(&mut self, value: u8) {
@@ -232,6 +243,10 @@ impl CPU {
 
         for (add, val) in &changes.memory {
             bus.mem_set8(*add, *val);
+        }
+        
+        for (add, val) in &changes.io {
+            bus.io_set8(*add, *val);
         }
     }
 

@@ -1,5 +1,5 @@
 pub mod mem;
-mod io;
+pub mod io;
 use crate::bus::io::Io;
 use crate::bus::mem::Memory;
 
@@ -93,6 +93,14 @@ impl Bus {
 
     pub fn io_print(&self) {
         self.io.print();
+    }
+
+    pub fn io_clone(&self) -> Io {
+        self.io.clone()
+    }
+
+    pub fn io_diff(&self, other: Io) -> Vec<(u8, u8)> {
+        self.io.diff(other)
     }
 
     pub fn io_get8(&self, pos:u8) -> u8 {

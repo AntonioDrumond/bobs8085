@@ -27,6 +27,23 @@ impl Io {
         }
     }
 
+    pub fn clone(&self) -> Io {
+        Io { arr: self.arr.clone() }
+    }
+
+    pub fn diff(&self, other:Io) -> Vec<(u8, u8)> {
+        let mut changes: Vec<(u8, u8)> = vec![];
+        let mut j : u8 = 0;
+
+        for i in &self.arr {
+            if *i != other.arr[j as usize] {
+                changes.push((j, other.arr[j as usize]));
+            }
+            j = j.wrapping_add(1);
+        }
+        changes
+    }
+
     pub fn get8(&self, pos:u8) -> u8 {
         self.arr[pos as usize]
     }

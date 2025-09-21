@@ -23,4 +23,5 @@ pub struct Regs {
 pub struct Changes {
     pub cpu : Regs,
     pub memory : Vec<(u16, u8)>,
+    pub io: Vec<(u8, u8)>,
 }
