@@ -40,7 +40,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Build binary
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --bin bobs8085 --release --target ${{ matrix.target }}
 
       - name: Package for release
         shell: bash
