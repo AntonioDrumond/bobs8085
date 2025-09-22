@@ -68,6 +68,10 @@ impl CPU {
         self.pc
     }
 
+    pub fn get_sp(&self) -> u16 {
+        self.sp
+    }
+
     fn fetch8(&mut self, bus: &Bus) -> u8 {
         self.pc += 1;
         bus.mem_get8(self.pc - 1)
@@ -130,6 +134,7 @@ impl CPU {
     }
 
     fn set_reg_pair(&mut self, target: u8, value: u16) {
+
         let l = (value >> 8) as u8;
         let r = value as u8;
         match target {
@@ -182,46 +187,19 @@ impl CPU {
 
     pub fn diff(&self, other: CPU) -> Regs {
         let mut changes = Regs::default();
-
-        if self.a != other.a {
-            changes.a = self.a;
-        }
-        if self.b != other.b {
-            changes.b = self.b;
-        }
-        if self.c != other.c {
-            changes.c = self.c;
-        }
-        if self.d != other.d {
-            changes.d = self.d;
-        }
-        if self.e != other.e {
-            changes.e = self.e;
-        }
-        if self.h != other.h {
-            changes.h = self.h;
-        }
-        if self.l != other.l {
-            changes.l = self.l;
-        }
-        if self.z != other.z {
-            changes.z = self.z;
-        }
-        if self.s != other.s {
-            changes.s = self.s;
-        }
-        if self.ac != other.ac {
-            changes.ac = self.ac;
-        }
-        if self.p != other.p {
-            changes.p = self.p;
-        }
-        if self.pc != other.pc {
-            changes.pc = self.pc;
-        }
-        if self.sp != other.sp {
-            changes.sp = self.sp;
-        }
+        changes.a = self.a;
+        changes.b = self.b;
+        changes.c = self.c;
+        changes.d = self.d;
+        changes.e = self.e;
+        changes.h = self.h;
+        changes.l = self.l;
+        changes.z = self.z;
+        changes.s = self.s;
+        changes.ac = self.ac;
+        changes.p = self.p;
+        changes.pc = self.pc;
+        changes.sp = self.sp;
         changes
     }
 

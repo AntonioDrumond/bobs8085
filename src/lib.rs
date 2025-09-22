@@ -56,8 +56,16 @@ impl Simulator {
         }
     }
     
-    pub fn get_pc(&mut self) -> u16 {
+    pub fn get_pc(&self) -> u16 {
         self.cpu.get_pc()
+    }
+
+    pub fn get_sp(&self) -> u16 {
+        self.cpu.get_sp()
+    }
+
+    pub fn get_flag(&self, target: u8) -> bool {
+        self.cpu.get_flag(target)
     }
 
     pub fn set_pc(&mut self, val: u16) {
@@ -72,15 +80,15 @@ impl Simulator {
         self.cpu.get_reg_pair(target)
     }
 
-    pub fn clone_cpu_bus(&self) -> (CPU, Memory) {
-        (self.cpu.clone(), self.bus.mem_clone())
+    pub fn clone_cpu_bus(&self) -> (CPU, Memory, Io) {
+        (self.cpu.clone(), self.bus.mem_clone(), self.bus.io_clone())
     }
 
     pub fn get_changes(&self, cpu_old: CPU, mem_old: Memory, io_old: Io) -> Changes {
         Changes { 
-                cpu: self.cpu.diff(cpu_old), 
-                memory: self.bus.mem_diff(mem_old),
-                io: self.bus.io_diff(io_old),
+            cpu: self.cpu.diff(cpu_old), 
+            memory: self.bus.mem_diff(mem_old),
+            io: self.bus.io_diff(io_old),
         }
     }
 

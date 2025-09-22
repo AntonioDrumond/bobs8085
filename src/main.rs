@@ -64,20 +64,20 @@ fn run_step(sim: &mut Simulator) {
                         let n = cmd[1].parse().expect("Not a valid number");
                         let mut i = 0;
                         while i < n && running == true {
-                            let (cpu_old, mem_old) = sim.clone_cpu_bus();
+                            let (cpu_old, mem_old, io_old) = sim.clone_cpu_bus();
 
                             running = sim.execute();
 
-                            let diff = sim.get_changes(cpu_old, mem_old);
+                            let diff = sim.get_changes(cpu_old, mem_old, io_old);
                             changes.push(diff);
 
                             step += 1;
                             i += 1;
                         }
                     } else {
-                        let (cpu_old, mem_old) = sim.clone_cpu_bus();
+                        let (cpu_old, mem_old, io_old) = sim.clone_cpu_bus();
                         running = sim.execute();
-                        let diff = sim.get_changes(cpu_old, mem_old);
+                        let diff = sim.get_changes(cpu_old, mem_old, io_old);
                         changes.push(diff);
                         step += 1;
                     }
