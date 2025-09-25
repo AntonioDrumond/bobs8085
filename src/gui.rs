@@ -155,7 +155,7 @@ fn get_io_box (state: &State) -> Column<'_, Message> {
 
     let mut i : u16 = 0;
     while i < 0xFF {
-        let mut io_row = row![text(format!("{:02X}: ", i))];
+        let mut io_row = row![text(format!("{:04X}: ", i))];
         while ((i+1) % 16) != 0 {
             io_row = io_row.push( text_center!(format!("{:02X}", state.sim.io_get8(i as u8))).size(14) );
             i += 1;
