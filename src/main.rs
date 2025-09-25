@@ -71,7 +71,6 @@ fn run_step(sim: &mut Simulator) {
                             let diff = sim.get_changes(cpu_old, mem_old, io_old);
                             changes.push(diff);
 
-                            step += 1;
                             i += 1;
                         }
                     } else {
@@ -79,13 +78,16 @@ fn run_step(sim: &mut Simulator) {
                         running = sim.execute();
                         let diff = sim.get_changes(cpu_old, mem_old, io_old);
                         changes.push(diff);
-                        step += 1;
                     }
+                    step += 1;
                 }
                 "<" | "backward" | "b" => {
-                    if step != 0 {
+                    if changes.len() != 0 {
                         step -= 1;
-                        sim.restore(&changes.remove(step));
+                        match &changes.pop() {
+                            Some(changes) => sim.restore(changes),
+                            _ => (),
+                        }
                     } else {
                         println!("Already at the start!");
                     }
