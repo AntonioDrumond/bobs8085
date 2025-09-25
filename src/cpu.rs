@@ -4,14 +4,14 @@ use crate::bus::Bus;
 use crate::changes::Changes;
 use crate::changes::Regs;
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct Interrupts {
     // From higher to lower priority
-    trap: bool,
-    rst7_5: bool,
-    rst6_5: bool,
-    rst5_5: bool,
-    intr: bool, // Interrupt request
+    pub trap: bool,
+    pub rst7_5: bool,
+    pub rst6_5: bool,
+    pub rst5_5: bool,
+    pub intr: bool, // Interrupt request
 }
 
 #[derive(Default, Debug, Clone)]
@@ -70,6 +70,18 @@ impl CPU {
 
     pub fn get_sp(&self) -> u16 {
         self.sp
+    }
+
+    pub fn get_masked_int(&self) -> Interrupts {
+        self.masked_int
+    }
+
+    pub fn get_int(&self) -> bool {
+        self.int
+    }
+
+    pub fn get_inta(&self) -> bool {
+        self.inta
     }
 
     fn fetch8(&mut self, bus: &Bus) -> u8 {
@@ -186,21 +198,22 @@ impl CPU {
     }
 
     pub fn diff(&self, other: CPU) -> Regs {
-        let mut changes = Regs::default();
-        changes.a = self.a;
-        changes.b = self.b;
-        changes.c = self.c;
-        changes.d = self.d;
-        changes.e = self.e;
-        changes.h = self.h;
-        changes.l = self.l;
-        changes.z = self.z;
-        changes.s = self.s;
-        changes.ac = self.ac;
-        changes.p = self.p;
-        changes.pc = self.pc;
-        changes.sp = self.sp;
-        changes
+        Regs {
+            a: other.a,
+            b: other.b,
+            c: other.c,
+            d: other.d,
+            e: other.e,
+            h: other.h,
+            l: other.l,
+            z: other.z,
+            s: other.s,
+            ac: other.ac,
+            p: other.p,
+            cy: other.cy,
+            pc: other.pc,
+            sp: other.sp,
+        }
     }
 
     pub fn restore(&mut self, bus: &mut Bus, changes: &Changes) {

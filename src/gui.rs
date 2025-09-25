@@ -1,4 +1,3 @@
-#[allow(unused_imports, dead_code)]
 use bobs8085::{
     changes::Changes,
     Simulator,
@@ -10,6 +9,11 @@ use std::{
     io::Write,
 };
 
+use iced::{
+    Element, Fill, Alignment, Length,
+    Border, Color, Theme, Font, window, Settings,
+};
+
 #[allow(unused_imports, dead_code)]
 use iced::widget::{
     Scrollable, Row, Column, Container,
@@ -18,14 +22,6 @@ use iced::widget::{
     horizontal_space,
 };
 
-#[allow(unused_imports, dead_code)]
-use iced::{
-    Element, Fill, Alignment, Length, Padding,
-    Border, Color, Theme, Font, window, Settings,
-};
-
-#[allow(unused_imports, dead_code)]
-use iced::highlighter::{self, Highlighter};
 
 #[derive(Debug, Clone)]
 #[allow(unused_imports, dead_code)]
@@ -47,7 +43,7 @@ struct State {
     editor_content: text_editor::Content,
     memory_page_number: u8,
     current_memory_page: u8,
-    step: u64,
+    step: bool,
     changes: Vec<Changes>,
 }
 
@@ -58,7 +54,7 @@ impl Default for State {
             editor_content: text_editor::Content::default(),
             memory_page_number: 16,
             current_memory_page: 0,
-            step: u64::MAX,
+            step: false,
             changes: vec![Changes::default(); 1],
         };
         state.changes[0].cpu.pc = 0xC000;
@@ -66,11 +62,53 @@ impl Default for State {
     }
 }
 
+impl State {
+    
+    fn reset_changes(&mut self) {
+        self.changes = vec![Changes::default(); 1];
+        self.changes[0].cpu.pc = 0xC000;
+    }
+
+}
+
+
 #[macro_export]
 macro_rules! text_center {
     ($x:expr) => {
         text($x).width(Fill).center()
     };
+}
+
+#[macro_export]
+macro_rules! title {
+    ($x:expr) => {
+        text($x)
+            .width(Fill)
+            .center()
+            .size(16)
+            .color(Color::parse("33c3ff").unwrap())
+    };
+    ($x:expr, $s:expr) => {
+        text($x)
+            .width(Fill)
+            .center()
+            .size($s)
+            .color(Color::parse("33c3ff").unwrap())
+    };
+}
+
+#[macro_export]
+macro_rules! add_border {
+    ($x:expr) => {
+        container($x)
+            .style(|_theme| container_style())
+    };
+
+    ($x:expr, $p:expr) => {
+        container($x)
+            .style(|_theme| container_style())
+            .padding($p)
+    }
 }
 
 fn container_style() -> container::Style {
@@ -91,7 +129,6 @@ fn editor_box (state: &State) -> Column<'_, Message> {
         text_editor(&state.editor_content)
             .on_action(Message::Edit)
             .height(Fill)
-            .with_highlighter()
     ].spacing(8)
      .align_x(Alignment::Center)
 }
@@ -142,11 +179,11 @@ fn get_memory_pages (state: &State) -> Vec<Column<'_, Message>> {
             let mut text = text(format!("{:02X}", state.sim.mem_get8(i)) )
                 .width(Fill)
                 .size(14);
-            if i == state.sim.get_pc() {
-                text = text.color(Color::from_rgb(256.0, 0.0, 0.0));
+            if i == (state.sim.get_pc().wrapping_sub(1)) {
+                text = text.color(Color::from_rgb(255.0, 0.0, 0.0));
             }
             else if i == state.sim.get_sp() {
-                text = text.color(Color::from_rgb(0.0, 256.0, 0.0));
+                text = text.color(Color::from_rgb(0.0, 255.0, 0.0));
             }
             mem_row = mem_row.push(text);
             i = i.wrapping_add(1);
@@ -177,99 +214,148 @@ fn get_memory_buttons () -> Row<'static, Message> {
 }
 
 fn reg_row (row: Row<'_, Message>) -> Container<'_, Message> {
-    container(row)
-        .style(|_theme| container_style())
-        .padding(5)
-        .center_x(500)
+    container(row.padding(5)).align_x(Alignment::Center).center(Fill)
 }
 
 fn register_box (state: &State) -> Container<'_, Message> {
 
     let reg_box = column![
-        reg_row(row![text_center!("CPU Registers")].padding([10,0])),
-        reg_row(row![text_center!("Accumulator: "), text_center!(format!("{:02X}", state.sim.cpu_get_reg(7)))]),
-        reg_row(row![text_center!("Register B: "), text_center!(format!("{:02X}", state.sim.cpu_get_reg(0)))]),
-        reg_row(row![text_center!("Register C: "), text_center!(format!("{:02X}", state.sim.cpu_get_reg(1)))]),
-        reg_row(row![text_center!("Register D: "), text_center!(format!("{:02X}", state.sim.cpu_get_reg(2)))]),
-        reg_row(row![text_center!("Register E: "), text_center!(format!("{:02X}", state.sim.cpu_get_reg(3)))]),
-        reg_row(row![text_center!("Register H: "), text_center!(format!("{:02X}", state.sim.cpu_get_reg(4)))]),
-        reg_row(row![text_center!("Register L: "), text_center!(format!("{:02X}", state.sim.cpu_get_reg(5)))]),
-        reg_row(row![text_center!("Memory: "), text_center!(format!("{:02X}", state.sim.cpu_get_reg(6)))]),
-    ].padding([0, 25])
-     .spacing(5);
+        reg_row(row![title!("CPU Registers")].padding([10,0])),
+        reg_row(row![text("Accumulator: "), text(format!("{:02X}", state.sim.cpu_get_reg(7)))]),
+        reg_row(row![text("Register B: "), text(format!("{:02X}", state.sim.cpu_get_reg(0)))]),
+        reg_row(row![text("Register C: "), text(format!("{:02X}", state.sim.cpu_get_reg(1)))]),
+        reg_row(row![text("Register D: "), text(format!("{:02X}", state.sim.cpu_get_reg(2)))]),
+        reg_row(row![text("Register E: "), text(format!("{:02X}", state.sim.cpu_get_reg(3)))]),
+        reg_row(row![text("Register H: "), text(format!("{:02X}", state.sim.cpu_get_reg(4)))]),
+        reg_row(row![text("Register L: "), text(format!("{:02X}", state.sim.cpu_get_reg(5)))]),
+        reg_row(row![text("Memory: "), text(format!("{:02X}", state.sim.cpu_get_reg(6)))]),
+        row![text_center!(format!("pc: 0x{:04X}", state.sim.get_pc())), text_center!(format!("sp: 0x{:04X}", state.sim.get_sp()))],
+    ].spacing(5);
 
-    container(reg_box).style(|_theme| container_style()).padding([10, 0])
+    add_border!(reg_box).padding([10, 0])
 }
 
 fn flags_box (state: &State) -> Container<'_, Message> {
-    let flag_box = row![
-        text_center!(format!("s: {}", state.sim.get_flag(0) as u8)),
-        text_center!(format!("z: {}", state.sim.get_flag(1) as u8)),
-        text_center!(format!("ac: {}", state.sim.get_flag(2) as u8)),
-        text_center!(format!("p: {}", state.sim.get_flag(3) as u8)),
-        text_center!(format!("cy: {}", state.sim.get_flag(4) as u8)),
-    ];
+    let flag_box = column![
+        title!("Flags"),
+        row![
+            text_center!(format!("s: {}", state.sim.get_flag(0) as u8)),
+            text_center!(format!("z: {}", state.sim.get_flag(1) as u8)),
+            text_center!(format!("ac: {}", state.sim.get_flag(2) as u8)),
+            text_center!(format!("p: {}", state.sim.get_flag(3) as u8)),
+            text_center!(format!("cy: {}", state.sim.get_flag(4) as u8)),
+        ],
+    ].spacing(10);
 
-    container(flag_box).style(|_theme| container_style()).padding([10, 0])
+    add_border!(flag_box, [10, 0])
+}
+
+fn int_color (line : &str, int: bool, mask: bool) -> Container<'_, Message> {
+    let target = text(line);
+    let mut val = text(format!("{}", int as u8));
+    if mask {
+        val = val.color(Color::from_rgb(255.0, 0.0, 0.0));
+    }
+    container(row![target, val]).align_x(Alignment::Center).center_x(Fill)
+}
+
+fn interrupts_box (state: &State) -> Container<'_, Message> {
+
+    let int_status = column![
+        title!("Interrupts"),
+        row![
+            text_center!(format!("sod: {}", state.sim.get_sod() as u8)),
+            text_center!(format!("sid: {}", state.sim.get_sid() as u8)),
+        ]
+    ].spacing(10);
+
+    let pending = state.sim.get_pending_int();
+    let masked = state.sim.get_masked_int();
+
+    let ints = column![
+        int_color("trap:", pending.trap, masked.trap),
+        int_color("r7_5:", pending.rst7_5, masked.rst7_5),
+        int_color("r6_5:", pending.rst6_5, masked.rst6_5),
+        int_color("r5_5:", pending.rst5_5, masked.rst5_5),
+        int_color("intr:", pending.intr, masked.intr),
+    ].padding([0, 25])
+     .spacing(5);
+
+    add_border!(
+        column![
+            int_status,
+            ints,
+        ].spacing(10)
+    ).padding(10)
 }
 
 fn update (state: &mut State, message: Message) {
 
     match message {
         Message::RunAll => {
+            state.reset_changes();
+            state.sim.clear_cpu();
             state.sim.set_pc(0xC000);
             while state.sim.execute() {}
         },
         Message::RunStep => {
+            state.reset_changes();
+            state.sim.clear_cpu();
             state.sim.set_pc(0xC000);
-            state.step = 0;
+            state.step = true;
         },
         Message::StopStep => {
-            state.step = u64::MAX;
+            state.step = false;
         }
         Message::ForwardStep => {
             let (cpu_old, mem_old, io_old) = state.sim.clone_cpu_bus();
             let status = state.sim.execute();
             if !status {
-                state.step = u64::MAX;
+                state.step = false;
             }
             else {
                 let diff = state.sim.get_changes(cpu_old, mem_old, io_old);
                 state.changes.push(diff);
-                state.step += 1;
             }
         },
         Message::BackwardStep => {
-            if state.step > 0 {
-                state.step -= 1;
-                state.sim.restore(&state.changes[state.step as usize]);
+            if state.changes.len() > 1 {
+                match &state.changes.pop() {
+                    Some(changes) => state.sim.restore(changes),
+                    _ => (),
+                }
             }
         },
         Message::MemoryPage(page) => state.current_memory_page = page,
         Message::Edit(action) => state.editor_content.perform(action),
         Message::Assemble => {
-            state.step = u64::MAX;
+            state.step = false;
             let mut file = File::create("program.asm").unwrap();
             let text = state.editor_content.text();
             let _ = write![file, "{}", text];
             let _ = assemble("program.asm", "out");
             state.sim = Simulator::bus_from_file("bin/out.bin");
+            state.reset_changes();
         },
     }
 }
 
 fn view (state: &State) -> Element<'_, Message> {
 
-    let inst_binary = column![text("binary placeholder")].height(Fill);
+//      let inst_binary = column![text("binary placeholder")].height(Fill);
 
+    // Section 1
     let section_1 = column![
         editor_box(state), 
         button("Assemble").on_press(Message::Assemble),
-        inst_binary,
+//          inst_binary,
     ].spacing(10);
 
+
+
+    // Section 2
     let control_buttons;
-    if state.step == u64::MAX {
+    if state.step == false {
         control_buttons = row![
             button("Run All").on_press(Message::RunAll),
             button("Run Step").on_press(Message::RunStep)
@@ -283,20 +369,16 @@ fn view (state: &State) -> Element<'_, Message> {
         ];
     }
 
-    let pc_sp = container(
-        row![
-            text_center!(format!("pc: 0x{:04X}", state.sim.get_pc())),
-            text_center!(format!("sp: 0x{:04X}", state.sim.get_sp())),
-        ]
-    ).style(|_theme| container_style()).padding([10, 0]);
-
     let section_2 = column![
         register_box(state),
-        pc_sp,
         flags_box(state),
+        interrupts_box(state),
         control_buttons.spacing(10),
     ].spacing(10);
 
+
+
+    // Section 3
     let box_size = Length::Fixed(475.0);
     let mem_box = get_memory_pages(state).remove(state.current_memory_page as usize);
     let scroll = scrollable(
@@ -312,13 +394,13 @@ fn view (state: &State) -> Element<'_, Message> {
     );
 
     let mem = column![
-        text_center!("Memory"),
+        title!("Memory", 20),
         get_memory_buttons().spacing(5).padding([0,2]),
         scroll.spacing(5),
     ].height(Fill).width(box_size).spacing(5);
 
     let io = column![
-        text_center!("IO"),
+        title!("IO", 20),
         io_box.spacing(5),
     ].height(Fill).width(box_size);
 
@@ -331,8 +413,10 @@ fn view (state: &State) -> Element<'_, Message> {
             .style(|_theme| container_style()),
     ].spacing(25);
 
-    let interface = row![
 
+
+    // Interface
+    let interface = row![
         section_1
             .width(Fill)
             .align_x(Alignment::Center),
@@ -340,7 +424,6 @@ fn view (state: &State) -> Element<'_, Message> {
         section_2
             .width(Fill)
             .align_x(Alignment::Center),
-
         section_3,
     ].padding(10).spacing(15);
 
@@ -351,7 +434,7 @@ fn main () -> iced::Result {
 
     let mut window_settings = window::Settings::default();
     window_settings.size = iced::Size { width: 1200.0, height: 780.0 };
-    window_settings.min_size = Some(iced::Size { width: 950.0, height: 600.0 });
+    window_settings.min_size = Some(iced::Size { width: 1000.0, height: 660.0 });
 
     let mut app_settings = Settings::default();
     app_settings.default_font = Font { family: iced::font::Family::Monospace, ..Font::default() };

@@ -85,7 +85,7 @@ fn run_step(sim: &mut Simulator) {
                 "<" | "backward" | "b" => {
                     if step != 0 {
                         step -= 1;
-                        sim.restore(&changes[step]);
+                        sim.restore(&changes.remove(step));
                     } else {
                         println!("Already at the start!");
                     }
