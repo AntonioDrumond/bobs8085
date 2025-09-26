@@ -4,14 +4,14 @@ use crate::bus::Bus;
 use crate::changes::Changes;
 use crate::changes::Regs;
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct Interrupts {
     // From higher to lower priority
-    trap: bool,
-    rst7_5: bool,
-    rst6_5: bool,
-    rst5_5: bool,
-    intr: bool, // Interrupt request
+    pub trap: bool,
+    pub rst7_5: bool,
+    pub rst6_5: bool,
+    pub rst5_5: bool,
+    pub intr: bool, // Interrupt request
 }
 
 #[derive(Default, Debug, Clone)]
@@ -66,6 +66,22 @@ impl CPU {
 
     pub fn get_pc(&self) -> u16 {
         self.pc
+    }
+
+    pub fn get_sp(&self) -> u16 {
+        self.sp
+    }
+
+    pub fn get_masked_int(&self) -> Interrupts {
+        self.masked_int
+    }
+
+    pub fn get_int(&self) -> bool {
+        self.int
+    }
+
+    pub fn get_inta(&self) -> bool {
+        self.inta
     }
 
     fn fetch8(&mut self, bus: &Bus) -> u8 {
@@ -130,6 +146,7 @@ impl CPU {
     }
 
     fn set_reg_pair(&mut self, target: u8, value: u16) {
+
         let l = (value >> 8) as u8;
         let r = value as u8;
         match target {
@@ -181,48 +198,22 @@ impl CPU {
     }
 
     pub fn diff(&self, other: CPU) -> Regs {
-        let mut changes = Regs::default();
-
-        if self.a != other.a {
-            changes.a = self.a;
+        Regs {
+            a: other.a,
+            b: other.b,
+            c: other.c,
+            d: other.d,
+            e: other.e,
+            h: other.h,
+            l: other.l,
+            z: other.z,
+            s: other.s,
+            ac: other.ac,
+            p: other.p,
+            cy: other.cy,
+            pc: other.pc,
+            sp: other.sp,
         }
-        if self.b != other.b {
-            changes.b = self.b;
-        }
-        if self.c != other.c {
-            changes.c = self.c;
-        }
-        if self.d != other.d {
-            changes.d = self.d;
-        }
-        if self.e != other.e {
-            changes.e = self.e;
-        }
-        if self.h != other.h {
-            changes.h = self.h;
-        }
-        if self.l != other.l {
-            changes.l = self.l;
-        }
-        if self.z != other.z {
-            changes.z = self.z;
-        }
-        if self.s != other.s {
-            changes.s = self.s;
-        }
-        if self.ac != other.ac {
-            changes.ac = self.ac;
-        }
-        if self.p != other.p {
-            changes.p = self.p;
-        }
-        if self.pc != other.pc {
-            changes.pc = self.pc;
-        }
-        if self.sp != other.sp {
-            changes.sp = self.sp;
-        }
-        changes
     }
 
     pub fn restore(&mut self, bus: &mut Bus, changes: &Changes) {

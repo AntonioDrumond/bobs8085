@@ -11,6 +11,7 @@ use crate::{
         io::Io,
     },
     cpu::CPU,
+    cpu::Interrupts,
     changes::Changes,
 };
 
@@ -55,9 +56,45 @@ impl Simulator {
             Err(e) => eprintln!("Error printing IO: {e}"),
         }
     }
+
+    pub fn clear_cpu (&mut self) {
+        self.cpu = CPU::default();
+    }
     
-    pub fn get_pc(&mut self) -> u16 {
+    pub fn get_pc(&self) -> u16 {
         self.cpu.get_pc()
+    }
+
+    pub fn get_sp(&self) -> u16 {
+        self.cpu.get_sp()
+    }
+
+    pub fn get_flag(&self, target: u8) -> bool {
+        self.cpu.get_flag(target)
+    }
+
+    pub fn get_int(&self) -> bool {
+        self.cpu.get_int()
+    }
+
+    pub fn get_inta(&self) -> bool {
+        self.cpu.get_inta()
+    }
+
+    pub fn get_sid(&self) -> bool {
+        self.cpu.sid
+    }
+
+    pub fn get_sod(&self) -> bool {
+        self.cpu.sod
+    }
+
+    pub fn get_pending_int(&self) -> Interrupts {
+        self.cpu.pending_int
+    }
+
+    pub fn get_masked_int(&self) -> Interrupts {
+        self.cpu.get_masked_int()
     }
 
     pub fn set_pc(&mut self, val: u16) {
@@ -86,6 +123,10 @@ impl Simulator {
 
     pub fn mem_get8(&self, pos: u16) -> u8 {
         self.bus.mem_get8(pos)
+    }
+
+    pub fn io_get8(&self, pos: u8) -> u8 {
+        self.bus.io_get8(pos)
     }
 
     pub fn restore(&mut self, changes: &Changes) {
