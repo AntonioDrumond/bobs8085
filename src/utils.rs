@@ -46,6 +46,8 @@ macro_rules! input {
 #[allow(dead_code)]
 #[rustfmt::skip]
 pub fn help_simulator() {
+    println!("BOBS_8085   v1.2.2");
+    println!("Developed by Antônio Drumond, Mateus Diniz and Davi Puddo");
     println!();
     println!("Simulator commands:");
     println!("h | help                  --> Prints this");

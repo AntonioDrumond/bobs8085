@@ -8,8 +8,6 @@ use std::{
 use bobs8085::{
     changes::Changes,
     Simulator,
-    //cpu::CPU,
-    //bus::Bus,
     assemble,
 };
 
@@ -18,7 +16,6 @@ use utils::{
     parse_u16,
 };
 
-// fn run_all(cpu: &mut CPU, bus: &mut Bus) {
 fn run_all(sim: &mut Simulator) {
     sim.set_pc(0xC000);
     let mut running = true;
@@ -29,7 +26,6 @@ fn run_all(sim: &mut Simulator) {
     sim.print_state();
 }
 
-// fn run_step(cpu: &mut CPU, bus: &mut Bus) {
 fn run_step(sim: &mut Simulator) {
     sim.set_pc(0xC000);
 
@@ -61,7 +57,16 @@ fn run_step(sim: &mut Simulator) {
             match cmd[0] {
                 ">" | "forward" | "f" => {
                     if cmd.len() >= 2 {
-                        let n = cmd[1].parse().expect("Not a valid number");
+                        //let n = cmd[1].parse().expect("Not a valid number");
+                        let n = match cmd[1].parse() {
+                            Ok(val) => val,
+                            Err(_) => {
+                                eprintln!("Error parsing integer, using 1 instead");
+                                let _ = input!("Press [Enter] to continue\n");
+                                1
+                            },
+                        };
+                        step += n - 1;
                         let mut i = 0;
                         while i < n && running == true {
                             let (cpu_old, mem_old, io_old) = sim.clone_cpu_bus();
@@ -141,7 +146,6 @@ fn run_step(sim: &mut Simulator) {
 }
 
 fn main() {
-    // utils::clear();
     loop {
         let word = input!("> $ ");
         let cmd = word.as_str().split_whitespace().collect::<Vec<_>>();
@@ -155,7 +159,8 @@ fn main() {
                     else {
                         match assemble(cmd[1], cmd[2]) {
                             Ok(()) => println!("Binary file saved at \"bin/{}.bin\"", cmd[2]),
-                            Err(err) => panic!("{}", err),
+                            // Err(err) => panic!("{}", err),
+                            Err(err) => eprintln!("Assembler error: {err}"),
                         }
                     }
                 }
@@ -167,13 +172,14 @@ fn main() {
                                 if cmd.len() < 3 { eprintln!("Please provide a file name for command \"run step\""); }
                                 else {
                                     let fname = cmd[2]
-                                        .split("/").collect::<Vec<_>>().last().expect("REASON")
+                                        .split("/").collect::<Vec<_>>().last().expect("This error should not be possible...")
                                         .split(".").collect::<Vec<_>>()[0];
 
                                     let outfile = format!("bin/{fname}.bin");
                                     match assemble(cmd[2], fname) {
                                         Ok(_) =>   run_step(&mut Simulator::bus_from_file(&outfile)),
-                                        Err(err) => panic!("{}", err),
+                                        // Err(err) => panic!("{}", err),
+                                        Err(err) => eprintln!("Assembler error: {err}"),
                                     }
                                 }
                             }
@@ -193,13 +199,14 @@ fn main() {
                             },
                             _ => {
                                 let fname = cmd[1]
-                                    .split("/").collect::<Vec<_>>().last().expect("REASON")
+                                    .split("/").collect::<Vec<_>>().last().expect("This error should not be possible...")
                                     .split(".").collect::<Vec<_>>()[0];
 
                                 let outfile = format!("bin/{fname}.bin");
                                 match assemble(cmd[1], fname) {
-                                    Ok(_) =>   run_all(&mut Simulator::bus_from_file(&outfile)),
-                                    Err(err) => panic!("{}", err),
+                                    Ok(_) => run_all(&mut Simulator::bus_from_file(&outfile)),
+                                    // Err(err) => panic!("{}", err),
+                                    Err(err) => eprintln!("Assembler error: {err}"),
                                 }
                             }
                         }
