@@ -65,13 +65,13 @@ jobs:
         with:
           name: bobs8085-${{ matrix.target }}-${{ matrix.osname }}
           path: bobs8085-*.zip # More specific path for zip
-          path-if-no-files-found: ignore
+          if-no-files-found: ignore
       - name: Upload artifact (tar.gz)
         uses: actions/upload-artifact@v4
         with:
           name: bobs8085-${{ matrix.target }}-${{ matrix.osname }}
           path: bobs8085-*.tar.gz # More specific path for tar.gz
-          path-if-no-files-found: ignore
+          if-no-files-found: ignore
 
 
   release:
