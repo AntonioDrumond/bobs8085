@@ -26,6 +26,8 @@ use iced::widget::{
 #[derive(Debug, Clone)]
 #[allow(unused_imports, dead_code)]
 enum Message {
+    OpenFile,
+    SaveFile,
     Assemble,
     RunAll,
     RunStep,
@@ -39,6 +41,7 @@ enum Message {
 #[derive(Debug)]
 #[allow(unused_imports, dead_code)]
 struct State {
+    interface: u8, // 0 -> simulator | 1 -> open file | 2 -> save file
     sim: Simulator,
     editor_content: text_editor::Content,
     memory_page_number: u8,
@@ -50,6 +53,7 @@ struct State {
 impl Default for State {
     fn default() -> Self {
         let mut state = State { 
+            interface: 0,
             sim: Simulator::default(),
             editor_content: text_editor::Content::default(),
             memory_page_number: 16,
@@ -63,12 +67,10 @@ impl Default for State {
 }
 
 impl State {
-    
     fn reset_changes(&mut self) {
         self.changes = vec![Changes::default(); 1];
         self.changes[0].cpu.pc = 0xC000;
     }
-
 }
 
 
@@ -337,21 +339,30 @@ fn update (state: &mut State, message: Message) {
             state.sim = Simulator::bus_from_file("bin/out.bin");
             state.reset_changes();
         },
+        Message::OpenFile => {
+            if state.interface == 0x1 {
+                state.interface = 0x0;
+            } else {
+                state.interface = 0x1;
+            }
+        },
+        Message::SaveFile => {
+            if state.interface == 0x2 {
+                state.interface = 0x0;
+            } else {
+                state.interface = 0x2;
+            }
+        }
     }
 }
 
-fn view (state: &State) -> Element<'_, Message> {
-
-//      let inst_binary = column![text("binary placeholder")].height(Fill);
+fn default_interface (state: &State) -> Container<'_, Message> {
 
     // Section 1
     let section_1 = column![
         editor_box(state), 
         button("Assemble").on_press(Message::Assemble),
-//          inst_binary,
     ].spacing(10);
-
-
 
     // Section 2
     let control_buttons;
@@ -415,8 +426,8 @@ fn view (state: &State) -> Element<'_, Message> {
 
 
 
-    // Interface
-    let interface = row![
+    // Main
+    let main = row![
         section_1
             .width(Fill)
             .align_x(Alignment::Center),
@@ -427,7 +438,37 @@ fn view (state: &State) -> Element<'_, Message> {
         section_3,
     ].padding(10).spacing(15);
 
-    interface.into()
+    container(main).into()
+}
+
+fn openfile_interface(state: &State) -> Container<'_, Message> {
+    let main = column![text("open")];
+    container(main).into()
+}
+
+fn savefile_interface(state: &State) -> Container<'_, Message> {
+    let main = column![text("save")];
+    container(main).into()
+}
+
+fn view (state: &State) -> Element<'_, Message> {
+
+    let main;
+    match state.interface {
+        0x0 => main = default_interface(state),
+        0x1 => main = openfile_interface(state),
+        0x2 => main = savefile_interface(state),
+        _ => panic!("Unknow state interface!")
+    }
+    let header = row![
+        button(text("Open File")).on_press(Message::OpenFile),
+        button(text("Save File")).on_press(Message::SaveFile)
+    ].padding(0).spacing(5);
+
+    column![header, main]
+        .padding(10)
+        .spacing(5)
+        .into()
 }
 
 fn main () -> iced::Result {
