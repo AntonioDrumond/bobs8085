@@ -142,17 +142,17 @@ impl<'a> Parser<'a> {
         match token.token_type() {
             TokenType::Name => {
                 if let Some((op, states)) = encode_inst(token.lexeme()) {
-                    if let Some(next_tok) = self.iterator.peek()
-                        && matches!(next_tok.token_type(), TokenType::Colon)
-                    {
-                        return Err(AssemblerError::SemanticError(
-                            format!(
-                                "label name \"{}\" is a reserved mnemonic, nice try nerd",
-                                token.lexeme(),
-                            ),
-                            Some(token.line()),
-                            Some(token.column()),
-                        ));
+                    if let Some(next_tok) = self.iterator.peek() {
+                        if matches!(next_tok.token_type(), TokenType::Colon) {
+                            return Err(AssemblerError::SemanticError(
+                                format!(
+                                    "label name \"{}\" is a reserved mnemonic, nice try nerd",
+                                    token.lexeme(),
+                                ),
+                                Some(token.line()),
+                                Some(token.column()),
+                            ));
+                        }
                     }
                     self.state_queue.extend(states);
                     self.next_bytes = op as u32;
@@ -162,17 +162,17 @@ impl<'a> Parser<'a> {
                 }
             }
             TokenType::HexLiteral => {
-                if let Some(next_tok) = self.iterator.peek()
-                    && matches!(next_tok.token_type(), TokenType::Colon)
-                {
-                    return Err(AssemblerError::SyntaxError(
-                        format!(
-                            "label name \"{}\" fits as a valid hex literal, choose better names",
-                            token.lexeme()
-                        ),
-                        Some(token.line()),
-                        Some(token.column()),
-                    ));
+                if let Some(next_tok) = self.iterator.peek() {
+                    if matches!(next_tok.token_type(), TokenType::Colon) {
+                        return Err(AssemblerError::SyntaxError(
+                            format!(
+                                "label name \"{}\" fits as a valid hex literal, choose better names",
+                                token.lexeme()
+                            ),
+                            Some(token.line()),
+                            Some(token.column()),
+                        ));
+                    }
                 }
             }
             TokenType::NewLine => self.state_queue.push_back(State::Search),
