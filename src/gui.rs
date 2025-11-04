@@ -6,6 +6,7 @@ use bobs8085::{
 
 use std::{
     fs::File,
+    env,
 
     io::{
         Write,
@@ -40,6 +41,7 @@ enum Message {
                       // 2 -> Save file
                       // 3 -> Help
 
+    NavigateTo(PathBuf),
     Assemble,
     RunAll,
     RunStep,
@@ -58,6 +60,7 @@ enum Message {
 struct State {
     interface: u8, // 0 -> simulator | 1 -> open file | 2 -> save file
     sim: Simulator,
+    cwd: PathBuf,
     editor_content: text_editor::Content,
     memory_page_number: u8,
     current_memory_page: u8,
@@ -70,6 +73,7 @@ impl Default for State {
         let mut state = State { 
             interface: 0,
             sim: Simulator::default(),
+            cwd: env::current_dir().unwrap(),
             editor_content: text_editor::Content::default(),
             memory_page_number: 16,
             current_memory_page: 0,
@@ -355,6 +359,7 @@ fn update (state: &mut State, message: Message) {
             state.reset_changes();
         },
         Message::SetInterface(interface) => state.interface = interface,
+        Message::NavigateTo(path) => state.cwd = path,
     }
 }
 
@@ -442,25 +447,36 @@ fn default_interface (state: &State) -> Container<'_, Message> {
     container(main).into()
 }
 
-fn openfile_interface(state: &State) -> Container<'_, Message> {
+fn openfile_interface(state: &State) -> Scrollable<'_, Message> {
 
-    let path_name = "/home/puddo/repos/8085asm/";
-    let path = Path::new(path_name);
-    let mut files = column![];
-    if path.is_dir() {
-        
-        for file in path.read_dir().expect("err") {
+    let cwd = Path::new(&state.cwd);
+
+    let parent : &Path;
+    match cwd.parent() {
+        Some(val) => parent = val,
+        None => parent = cwd,
+    }
+
+    let mut cwd_box = column![
+        button(text(parent.to_str().unwrap().to_string()))
+            .on_press(Message::NavigateTo(parent.to_path_buf()))
+    ].spacing(10);
+
+    if cwd.is_dir() {
+        for file in cwd.read_dir().expect("err") {
             if let Ok(file) = file {
-                match file.path().file_name() {
-                    Some(name) => files = files.push(text(name)),
-                    None => (),
-                };
+                let entry = file.path().to_str().unwrap().to_string();
+                cwd_box = cwd_box.push(
+                    button(text(entry))
+                        .on_press(Message::NavigateTo(file.path()))
+                    );
             }
         }
     }
+    let main = column![text(cwd.to_str().unwrap().to_string()), cwd_box]
+        .spacing(10);
 
-    let main = column![text("open"), files];
-    container(main).into()
+    scrollable(container(main).width(Fill)).into()
 }
 
 fn savefile_interface(state: &State) -> Container<'_, Message> {
