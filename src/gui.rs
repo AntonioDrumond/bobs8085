@@ -6,7 +6,16 @@ use bobs8085::{
 
 use std::{
     fs::File,
-    io::Write,
+
+    io::{
+        Write,
+        prelude::*,
+    },
+
+    path::{
+        Path,
+        PathBuf,
+    }
 };
 
 use iced::{
@@ -26,13 +35,19 @@ use iced::widget::{
 #[derive(Debug, Clone)]
 #[allow(unused_imports, dead_code)]
 enum Message {
-    OpenFile,
-    SaveFile,
+    SetInterface(u8), // 0 -> Simulator 
+                      // 1 -> Open file
+                      // 2 -> Save file
+                      // 3 -> Help
+
     Assemble,
     RunAll,
     RunStep,
+
     Edit(text_editor::Action),
+
     MemoryPage(u8),
+
     ForwardStep,
     BackwardStep,
     StopStep,
@@ -216,7 +231,7 @@ fn get_memory_buttons () -> Row<'static, Message> {
 }
 
 fn reg_row (row: Row<'_, Message>) -> Container<'_, Message> {
-    container(row.padding(5)).align_x(Alignment::Center).center(Fill)
+    container(row).align_x(Alignment::Center).center(Fill)
 }
 
 fn register_box (state: &State) -> Container<'_, Message> {
@@ -339,20 +354,7 @@ fn update (state: &mut State, message: Message) {
             state.sim = Simulator::bus_from_file("bin/out.bin");
             state.reset_changes();
         },
-        Message::OpenFile => {
-            if state.interface == 0x1 {
-                state.interface = 0x0;
-            } else {
-                state.interface = 0x1;
-            }
-        },
-        Message::SaveFile => {
-            if state.interface == 0x2 {
-                state.interface = 0x0;
-            } else {
-                state.interface = 0x2;
-            }
-        }
+        Message::SetInterface(interface) => state.interface = interface,
     }
 }
 
@@ -425,7 +427,6 @@ fn default_interface (state: &State) -> Container<'_, Message> {
     ].spacing(25);
 
 
-
     // Main
     let main = row![
         section_1
@@ -442,7 +443,23 @@ fn default_interface (state: &State) -> Container<'_, Message> {
 }
 
 fn openfile_interface(state: &State) -> Container<'_, Message> {
-    let main = column![text("open")];
+
+    let path_name = "/home/puddo/repos/8085asm/";
+    let path = Path::new(path_name);
+    let mut files = column![];
+    if path.is_dir() {
+        
+        for file in path.read_dir().expect("err") {
+            if let Ok(file) = file {
+                match file.path().file_name() {
+                    Some(name) => files = files.push(text(name)),
+                    None => (),
+                };
+            }
+        }
+    }
+
+    let main = column![text("open"), files];
     container(main).into()
 }
 
@@ -451,24 +468,59 @@ fn savefile_interface(state: &State) -> Container<'_, Message> {
     container(main).into()
 }
 
+fn help_interface(state: &State)  -> Container<'_, Message> {
+    let main = column![text("help")];
+    container(main).into()
+}
+
 fn view (state: &State) -> Element<'_, Message> {
 
-    let main;
     match state.interface {
-        0x0 => main = default_interface(state),
-        0x1 => main = openfile_interface(state),
-        0x2 => main = savefile_interface(state),
+        0x0 => {    // Simualtor
+            let header = row![
+                button(text("Open File")).on_press(Message::SetInterface(0x1)),
+                button(text("Save File")).on_press(Message::SetInterface(0x2)),
+                button(text("Help")).on_press(Message::SetInterface(0x3)),
+            ].spacing(5);
+
+            column![
+                header,
+                default_interface(state)
+            ].padding(10).spacing(5).into()
+
+        },
+        0x1 => {    // Open file
+            let header = row![
+                button(text("Back")).on_press(Message::SetInterface(0x0)),
+            ].spacing(5);
+
+            column![
+                header,
+                openfile_interface(state),
+            ].padding(10).spacing(5).into()
+        },
+        0x2 => {    // Save file
+            let header = row![
+                button(text("Back")).on_press(Message::SetInterface(0x0)),
+            ].spacing(5);
+
+            column![
+                header,
+                savefile_interface(state),
+            ].padding(10).spacing(5).into()
+        },
+        0x3 => {    // Help
+            let header = row![
+                button(text("Back")).on_press(Message::SetInterface(0x0)),
+            ].spacing(5);
+
+            column![
+                header,
+                help_interface(state)
+            ].padding(10).spacing(5).into()
+        },
         _ => panic!("Unknow state interface!")
     }
-    let header = row![
-        button(text("Open File")).on_press(Message::OpenFile),
-        button(text("Save File")).on_press(Message::SaveFile)
-    ].padding(0).spacing(5);
-
-    column![header, main]
-        .padding(10)
-        .spacing(5)
-        .into()
 }
 
 fn main () -> iced::Result {
