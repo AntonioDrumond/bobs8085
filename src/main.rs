@@ -1,22 +1,16 @@
 mod utils;
 
-use std::{
-    io,
-    io::Write,
-};
+use std::{io, io::Write};
 
 use bobs8085::{
-    changes::Changes,
     Simulator,
     //cpu::CPU,
     //bus::Bus,
     assemble,
+    changes::Changes,
 };
 
-use utils::{
-    clear,
-    parse_u16,
-};
+use utils::{clear, parse_u16};
 
 // fn run_all(cpu: &mut CPU, bus: &mut Bus) {
 fn run_all(sim: &mut Simulator) {
@@ -106,7 +100,7 @@ fn run_step(sim: &mut Simulator) {
                             Ok(res) => val = res,
                             Err(err) => eprintln!("ParseError: {}", err),
                         }
-                        sim.print_mem_range(val, val+1);
+                        sim.print_mem_range(val, val + 1);
                     } else if len == 3 {
                         let mut lo = 0x00;
                         let mut hi = 0x00;
@@ -129,8 +123,11 @@ fn run_step(sim: &mut Simulator) {
                     let _ = input!("\nPress [Enter] to continue\n");
                 }
                 _ => {
-                    let _ = input!(format!("\"{}\" is not recognized as a command\nPress [Enter] to continue\n", cmd[0]));
-                },
+                    let _ = input!(format!(
+                        "\"{}\" is not recognized as a command\nPress [Enter] to continue\n",
+                        cmd[0]
+                    ));
+                }
             }
         }
     }
@@ -138,6 +135,10 @@ fn run_step(sim: &mut Simulator) {
     clear();
     println!("Program finished.\nCPU State at end of program:\n");
     sim.print_state();
+}
+
+fn print_err(err: &str) {
+    println!("\x1b[31m{err}\x1b[0m",);
 }
 
 fn main() {
@@ -151,61 +152,91 @@ fn main() {
                 "cls" | "clear" => utils::clear(),
                 "h" | "help" => utils::help_simulator(),
                 "assemble" => {
-                    if cmd.len() < 3 { eprintln!("Please provide a input file and an output file for command \"assemble\""); }
-                    else {
+                    if cmd.len() < 3 {
+                        eprintln!(
+                            "Please provide a input file and an output file for command \"assemble\""
+                        );
+                    } else {
                         match assemble(cmd[1], cmd[2]) {
                             Ok(()) => println!("Binary file saved at \"bin/{}.bin\"", cmd[2]),
-                            Err(err) => panic!("{}", err),
+                            Err(err) => {
+                                print_err(&format!("{}", err));
+                                continue;
+                            }
                         }
                     }
                 }
                 "run" => {
-                    if cmd.len() < 2 { eprintln!("Please provide a file name for command \"run\""); }
-                    else {
+                    if cmd.len() < 2 {
+                        eprintln!("Please provide a file name for command \"run\"");
+                    } else {
                         match cmd[1] {
                             "step" => {
-                                if cmd.len() < 3 { eprintln!("Please provide a file name for command \"run step\""); }
-                                else {
+                                if cmd.len() < 3 {
+                                    eprintln!(
+                                        "Please provide a file name for command \"run step\""
+                                    );
+                                } else {
                                     let fname = cmd[2]
-                                        .split("/").collect::<Vec<_>>().last().expect("REASON")
-                                        .split(".").collect::<Vec<_>>()[0];
+                                        .split("/")
+                                        .collect::<Vec<_>>()
+                                        .last()
+                                        .expect("REASON")
+                                        .split(".")
+                                        .collect::<Vec<_>>()[0];
 
                                     let outfile = format!("bin/{fname}.bin");
                                     match assemble(cmd[2], fname) {
-                                        Ok(_) =>   run_step(&mut Simulator::bus_from_file(&outfile)),
-                                        Err(err) => panic!("{}", err),
+                                        Ok(_) => run_step(&mut Simulator::bus_from_file(&outfile)),
+                                        Err(err) => {
+                                            print_err(&format!("{}", err));
+                                            continue;
+                                        }
                                     }
                                 }
                             }
                             "bin" => {
-                                if cmd.len() < 3 { eprintln!("Please provide a file name for command \"run bin\""); }
-                                else {
+                                if cmd.len() < 3 {
+                                    eprintln!("Please provide a file name for command \"run bin\"");
+                                } else {
                                     match cmd[2] {
                                         "step" => {
-                                            if cmd.len() < 4 { eprintln!("Please provide a file name for command \"run bin step\""); }
-                                            else {
+                                            if cmd.len() < 4 {
+                                                eprintln!(
+                                                    "Please provide a file name for command \"run bin step\""
+                                                );
+                                            } else {
                                                 run_step(&mut Simulator::bus_from_file(cmd[3]));
                                             }
                                         }
                                         _ => run_all(&mut Simulator::bus_from_file(cmd[2])),
                                     }
                                 }
-                            },
+                            }
                             _ => {
                                 let fname = cmd[1]
-                                    .split("/").collect::<Vec<_>>().last().expect("REASON")
-                                    .split(".").collect::<Vec<_>>()[0];
+                                    .split("/")
+                                    .collect::<Vec<_>>()
+                                    .last()
+                                    .expect("REASON")
+                                    .split(".")
+                                    .collect::<Vec<_>>()[0];
 
                                 let outfile = format!("bin/{fname}.bin");
                                 match assemble(cmd[1], fname) {
-                                    Ok(_) =>   run_all(&mut Simulator::bus_from_file(&outfile)),
-                                    Err(err) => panic!("{}", err),
+                                    Ok(_) => run_all(&mut Simulator::bus_from_file(&outfile)),
+                                    Err(err) => {
+                                        print_err(&format!("{}", err));
+                                        continue;
+                                    }
                                 }
                             }
                         }
                     }
                 }
-                _ => eprintln!("Unknown command: {word}\nYou can type \"help\" to see available commands or \"quit\" to exit.\n"),
+                _ => eprintln!(
+                    "Unknown command: {word}\nYou can type \"help\" to see available commands or \"quit\" to exit.\n"
+                ),
             }
         }
     }
