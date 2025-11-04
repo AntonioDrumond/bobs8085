@@ -1,0 +1,88 @@
+CMP SRC 
+    Name: Compare Register or Memory with Accumulator 
+    Description: The 8-bit contents of the SRC register (A, B, C, D, E, H, L, M) are compared to (subtracted from) the accumulator. The accumulator's contents are not changed. If M is specified, the operand is fetched from the memory location specified by the HL register pair. 
+    Flags: All flags (S, Z, AC, P, CY) are affected based on the result of the subtraction. * (A) < SRC: Carry flag (CY) is set. * (A) = SRC: Zero flag (Z) is set. * (A) > SRC: Carry (CY) and Zero (Z) flags are reset.
+
+
+CPI DATA 
+    Name: Compare Immediate with Accumulator 
+    Description: The 8-bit immediate DATA is compared to (subtracted from) the accumulator. The accumulator's contents are not changed. 
+    Flags: All flags (S, Z, AC, P, CY) are affected based on the result of the subtraction. * (A) < DATA: Carry flag (CY) is set. * (A) = DATA: Zero flag (Z) is set. * (A) > DATA: Carry (CY) and Zero (Z) flags are reset.
+
+
+ANA SRC 
+    Name: Logical AND Register or Memory with Accumulator 
+    Description: The 8-bit contents of the SRC register (A, B, C, D, E, H, L, M) are logically ANDed with the accumulator. The result is stored in the accumulator. If M is specified, the operand is fetched from the memory location specified by the HL register pair. 
+    Flags: S, Z, and P are modified. CY is reset (0), and AC is set (1).
+
+
+ANI DATA 
+    Name: Logical AND Immediate with Accumulator 
+    Description: The 8-bit immediate DATA is logically ANDed with the accumulator. The result is stored in the accumulator. 
+    Flags: S, Z, and P are modified. CY is reset (0), and AC is set (1).
+
+
+XRA SRC 
+    Name: Exclusive OR Register or Memory with Accumulator 
+    Description: The 8-bit contents of the SRC register (A, B, C, D, E, H, L, M) are logically Exclusive-ORed with the accumulator. The result is stored in the accumulator. If M is specified, the operand is fetched from the memory location specified by the HL register pair. 
+    Flags: S, Z, and P are modified. CY and AC are reset (0).
+
+
+XRI DATA 
+    Name: Exclusive OR Immediate with Accumulator 
+    Description: The 8-bit immediate DATA is logically Exclusive-ORed with the accumulator. The result is stored in the accumulator. 
+    Flags: S, Z, and P are modified. CY and AC are reset (0).
+
+
+ORA SRC 
+    Name: Logical OR Register or Memory with Accumulator 
+    Description: The 8-bit contents of the SRC register (A, B, C, D, E, H, L, M) are logically ORed with the accumulator. The result is stored in the accumulator. If M is specified, the operand is fetched from the memory location specified by the HL register pair. 
+    Flags: S, Z, and P are modified. CY and AC are reset (0).
+
+
+ORI DATA 
+    Name: Logical OR Immediate with Accumulator 
+    Description: The 8-bit immediate DATA is logically ORed with the accumulator. The result is stored in the accumulator. 
+    Flags: S, Z, and P are modified. CY and AC are reset (0).
+
+
+RLC 
+    Name: Rotate Accumulator Left 
+    Description: Each bit in the accumulator is rotated left by one position. Bit 7 (the most significant bit) is moved to the Bit 0 position and is also copied into the Carry Flag. 
+    Flags: Only the Carry Flag (CY) is affected.
+
+
+RRC 
+    Name: Rotate Accumulator Right 
+    Description: Each bit in the accumulator is rotated right by one position. Bit 0 (the least significant bit) is moved to the Bit 7 position and is also copied into the Carry Flag. 
+    Flags: Only the Carry Flag (CY) is affected.
+
+
+RAL 
+    Name: Rotate Accumulator Left Through Carry 
+    Description: Each bit in the accumulator is rotated left by one position through the Carry Flag. Bit 7 is moved into the Carry Flag, and the previous value of the Carry Flag is moved into Bit 0. 
+    Flags: Only the Carry Flag (CY) is affected.
+
+
+RAR 
+    Name: Rotate Accumulator Right Through Carry 
+    Description: Each bit in the accumulator is rotated right by one position through the Carry Flag. Bit 0 is moved into the Carry Flag, and the previous value of the Carry Flag is moved into Bit 7. 
+    Flags: Only the Carry Flag (CY) is affected.
+
+
+CMA 
+    Name: Complement Accumulator 
+    Description: The 8-bit contents of the accumulator are complemented (bitwise NOT). 
+    Flags: No flags are affected.
+
+
+CMC 
+    Name: Complement Carry 
+    Description: The Carry Flag (CY) is complemented (flipped). 
+    Flags: Only the Carry Flag (CY) is affected.
+
+
+STC 
+    Name: Set Carry 
+    Description: The Carry Flag (CY) is set to 1. 
+    Flags: Only the Carry Flag (CY) is affected.

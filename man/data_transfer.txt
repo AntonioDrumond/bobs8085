@@ -1,0 +1,94 @@
+MOV DEST,SRC
+    Name: Copy from Source to Destination
+    Description: Copies the content (8 bits) from the SRC register (A, B, C, D, E, H, L, M) to the DEST register (A, B, C, D, E, H, L, M). If M is specified as source or destination, the instruction accesses the memory location specified by the HL register pair.
+    Flags: No flags are affected.
+
+
+MVI DEST,DATA 
+    Name: Move Immediate 8-bit 
+    Description: The 8-bit DATA is stored in the DEST register (A, B, C, D, E, H, L, M). If M is specified, the data is stored in the memory location specified by the HL register pair. 
+    Flags: No flags are affected.
+
+
+LDA ADDR 
+    Name: Load Accumulator 
+    Description: The 8-bit contents of the memory location specified by the 16-bit ADDR are copied to the accumulator (Register A). 
+    Flags: No flags are affected.
+
+
+LDAX REG_PAIR 
+    Name: Load Accumulator Indirect 
+    Description: The 8-bit contents of the memory location, whose address is in the specified register pair (B or D), are copied to the accumulator (Register A). 
+    Flags: No flags are affected.
+
+
+LXI REG_PAIR,DATA16 
+    Name: Load Register Pair Immediate 
+    Description: The 16-bit immediate data (DATA16) is loaded into the specified register pair (B, D, H, or SP). 
+    Flags: No flags are affected.
+
+
+LHLD ADDR 
+    Name: Load H and L Registers Direct 
+    Description: Copies the 8-bit contents of the memory location specified by the 16-bit ADDR into register L. Then, copies the 8-bit contents of the next memory location (ADDR+1) into register H. 
+    Flags: No flags are affected.
+
+
+STA ADDR 
+    Name: Store Accumulator Direct 
+    Description: The 8-bit contents of the accumulator (Register A) are stored in the memory location specified by the 16-bit ADDR. 
+    Flags: No flags are affected.
+
+
+STAX REG_PAIR 
+    Name: Store Accumulator Indirect 
+    Description: The 8-bit contents of the accumulator (Register A) are stored in the memory location whose address is in the specified register pair (B or D). 
+    Flags: No flags are affected.
+
+
+SHLD ADDR 
+    Name: Store H and L Registers Direct 
+    Description: Stores the 8-bit contents of register L in the memory location specified by the 16-bit ADDR. Then, stores the 8-bit contents of register H in the next memory location (ADDR+1). 
+    Flags: No flags are affected.
+
+
+XCHG 
+    Name: Exchange H and L with D and E 
+    Description: The 16-bit contents of the HL register pair are exchanged with the 16-bit contents of the DE register pair. (Register H is swapped with D, and register L is swapped with E). 
+    Flags: No flags are affected.
+
+
+SPHL 
+    Name: Copy H and L Registers to the Stack Pointer 
+    Description: The 16-bit contents of the HL register pair are copied into the Stack Pointer (SP) register. Register H is copied to the high-order byte of SP, and register L is copied to the low-order byte. 
+    Flags: No flags are affected.
+
+
+XTHL 
+    Name: Exchange H and L with Top of Stack 
+    Description: The 8-bit contents of register L are exchanged with the 8-bit contents of the memory location pointed to by the Stack Pointer (SP). The 8-bit contents of register H are exchanged with the contents of the next memory location (SP+1). 
+    Flags: No flags are affected.
+
+
+PUSH REG_PAIR 
+    Name: Push Register Pair onto Stack 
+    Description: The 16-bit contents of the specified register pair (B, D, H, or PSW) are copied to the stack. The Stack Pointer (SP) is decremented, the high-order byte (B, D, H, or A) is stored, SP is decremented again, and the low-order byte (C, E, L, or Flags) is stored. 
+    Flags: No flags are affected.
+
+
+POP REG_PAIR 
+    Name: Pop off Stack to Register Pair 
+    Description: The 16-bit contents from the top of the stack are copied into the specified register pair (B, D, H, or PSW). The low-order byte (C, E, L, or Flags) is loaded from the address in SP, SP is incremented, the high-order byte (B, D, H, or A) is loaded, and SP is incremented again. 
+    Flags: No flags are affected, unless the register pair is PSW. If PSW, all flags (S, Z, AC, P, CY) are loaded from the stack.
+
+
+OUT ADDR 
+    Name: Output Data from Accumulator 
+    Description: The 8-bit contents of the accumulator (Register A) are sent to the I/O port specified by the 8-bit ADDR address. 
+    Flags: No flags are affected.
+
+
+IN ADDR 
+    Name: Input Data to Accumulator 
+    Description: The 8-bit data from the I/O port specified by the 8-bit ADDR address is read and loaded into the accumulator (Register A). 
+    Flags: No flags are affected.

@@ -1,0 +1,34 @@
+NOP 
+    Name: No Operation 
+    Description: No operation is performed. The instruction is fetched and decoded, but it only consumes processing time and increments the Program Counter. 
+    Flags: No flags are affected.
+
+
+HLT 
+    Name: Halt 
+    Description: The CPU finishes executing the current instruction and enters a halt state, stopping further execution. An interrupt (if enabled) or a reset is normally required to exit the halt state. In this simulator, the execution is simply finished.
+    Flags: No flags are affected.
+
+
+DI 
+    Name: Disable Interrupts 
+    Description: Resets the interrupt enable flip-flop, disabling all maskable interrupts (RST 7.5, 6.5, 5.5, and INTR). This instruction does not affect the non-maskable TRAP interrupt. 
+    Flags: No flags are affected.
+
+
+EI 
+    Name: Enable Interrupts 
+    Description: Sets the interrupt enable flip-flop, enabling all maskable interrupts (RST 7.5, 6.5, 5.5, and INTR). Interrupts are automatically disabled after a reset or when an interrupt is acknowledged, so this instruction is used to re-enable them.
+    Flags: No flags are affected.
+
+
+RIM 
+    Name: Read Interrupt Mask 
+    Description: A multipurpose instruction that loads 8 bits into the accumulator reflecting the current interrupt status. This byte contains the status of the Serial Input Data (SID) pin, pending interrupts (RST 7.5, 6.5, 5.5), the Interrupt Enable (IE) flag, and the current interrupt masks. 
+    Flags: No flags are affected.
+
+
+SIM 
+    Name: Set Interrupt Mask 
+    Description: A multipurpose instruction that interprets the accumulator's contents to set interrupt masks or control serial output. It is used to set the masks for RST 7.5, 6.5, and 5.5, to reset the RST 7.5 flip-flop, and to send data to the Serial Output Data (SOD) pin. 
+    Flags: No flags are affected.

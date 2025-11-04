@@ -1,0 +1,88 @@
+JMP ADDR 
+    Name: Jump Unconditionally 
+    Description: The program sequence is transferred to the memory location specified by the 16-bit ADDR. 
+    Flags: No flags are affected.
+
+
+J<condition> ADDR 
+    Name: Jump Conditionally 
+    Description: The program sequence is transferred to the 16-bit ADDR only if the specified flag condition is met. 
+    Flags: No flags are affected.
+
+    Conditions:
+    * JC: Jump on Carry (CY = 1)
+    * JNC: Jump on No Carry (CY = 0)
+    * JZ: Jump on Zero (Z = 1)
+    * JNZ: Jump on No Zero (Z = 0)
+    * JP: Jump on Positive (S = 0)
+    * JM: Jump on Minus (S = 1)
+    * JPE: Jump on Parity Even (P = 1)
+    * JPO: Jump on Parity Odd (P = 0)
+
+
+CALL ADDR 
+    Name: Call Subroutine Unconditionally 
+    Description: The address of the next instruction is pushed onto the stack. The program sequence is then transferred to the subroutine at the 16-bit ADDR. 
+    Flags: No flags are affected.
+
+
+C<condition> ADDR 
+    Name: Call Conditionally 
+    Description: If the specified flag condition is met, the address of the next instruction is pushed onto the stack, and the program sequence is transferred to the 16-bit ADDR. 
+    Flags: No flags are affected.
+
+
+    Conditions:
+    * CC: Call on Carry (CY = 1)
+    * CNC: Call on No Carry (CY = 0)
+    * CZ: Call on Zero (Z = 1)
+    * CNZ: Call on No Zero (Z = 0)
+    * CP: Call on Positive (S = 0)
+    * CM: Call on Minus (S = 1)
+    * CPE: Call on Parity Even (P = 1)
+    * CPO: Call on Parity Odd (P = 0)
+
+
+RET 
+    Name: Return from Subroutine Unconditionally 
+    Description: The program sequence is transferred from the subroutine back to the calling program. The 16-bit address from the top of the stack is popped into the Program Counter (PC), and the Stack Pointer (SP) is incremented by 2. 
+    Flags: No flags are affected.
+
+
+R<condition> 
+    Name: Return Conditionally 
+    Description: If the specified flag condition is met, the program sequence is transferred from the subroutine to the calling program. The 16-bit address from the top of the stack is popped into the Program Counter (PC), and the Stack Pointer (SP) is incremented by 2. 
+    Flags: No flags are affected.
+
+    Conditions:
+    * RC: Return on Carry (CY = 1)
+    * RNC: Return on No Carry (CY = 0)
+    * RZ: Return on Zero (Z = 1)
+    * RNZ: Return on No Zero (Z = 0)
+    * RP: Return on Positive (S = 0)
+    * RM: Return on Minus (S = 1)
+    * RPE: Return on Parity Even (P = 1)
+    * RPO: Return on Parity Odd (P = 0)
+
+
+PCHL 
+    Name: Load Program Counter with HL 
+    Description: The 16-bit contents of the HL register pair are copied into the Program Counter (PC). Program execution continues from the address now in the PC. 
+    Flags: No flags are affected.
+
+
+RST N 
+    Name: Restart 
+    Description: A 1-byte call instruction to a fixed address. The address of the next instruction is pushed onto the stack. Program execution is transferred to the address corresponding to N (a value from 0-7).
+
+    Software Restart Addresses (N * 8):
+    * RST 0: 0000H
+    * RST 1: 0008H
+    * RST 2: 0010H
+    * RST 3: 0018H
+    * RST 4: 0020H
+    * RST 5: 0028H
+    * RST 6: 0030H
+    * RST 7: 0038H
+
+    Flags: No flags are affected.

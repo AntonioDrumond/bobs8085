@@ -1,0 +1,82 @@
+ADD SRC 
+    Name: Add Register or Memory to Accumulator 
+    Description: The 8-bit contents of the SRC register (A, B, C, D, E, H, L, M) are added to the 8-bit contents of the accumulator, and the result is stored in the accumulator. If M is specified, the operand is fetched from the memory location specified by the HL register pair. 
+    Flags: All flags (S, Z, AC, P, CY) are affected.
+
+
+ADC SRC 
+    Name: Add Register or Memory to Accumulator with Carry 
+    Description: The 8-bit contents of the SRC register (A, B, C, D, E, H, L, M) and the Carry Flag (CY) are added to the 8-bit contents of the accumulator. The result is stored in the accumulator. If M is specified, the operand is fetched from the memory location specified by the HL register pair. 
+    Flags: All flags (S, Z, AC, P, CY) are affected.
+
+
+ADI DATA 
+    Name: Add Immediate to Accumulator 
+    Description: The 8-bit immediate DATA is added to the 8-bit contents of the accumulator, and the result is stored in the accumulator. 
+    Flags: All flags (S, Z, AC, P, CY) are affected.
+
+
+ACI DATA 
+    Name: Add Immediate to Accumulator with Carry 
+    Description: The 8-bit immediate DATA and the Carry Flag (CY) are added to the 8-bit contents of the accumulator. The result is stored in the accumulator. 
+    Flags: All flags (S, Z, AC, P, CY) are affected.
+
+
+DAD REG_PAIR 
+    Name: Add Register Pair to H and L Registers 
+    Description: The 16-bit contents of the specified register pair (B, D, H, or SP) are added to the 16-bit contents of the HL register pair. The result is stored in the HL register pair. 
+    Flags: Only the Carry Flag (CY) is affected. It is set if the addition iresults in a carry. No other flags are changed.
+
+
+SUB SRC 
+    Name: Subtract Register or Memory from Accumulator 
+    Description: The 8-bit contents of the SRC register (A, B, C, D, E, H, L, M) are subtracted from the 8-bit contents of the accumulator. The result is stored in the accumulator. If M is specified, the operand is fetched from the memory location specified by the HL register pair. 
+    Flags: All flags (S, Z, AC, P, CY) are affected.
+
+
+SBB SRC 
+    Name: Subtract Register or Memory from Accumulator with Borrow 
+    Description: The 8-bit contents of the SRC register (A, B, C, D, E, H, L, M) and the Carry Flag (CY, acting as a borrow) are subtracted from the 8-bit contents of the accumulator. The result is stored in the accumulator. If M is specified, the operand is fetched from the memory location specified by the HL register pair. 
+    Flags: All flags (S, Z, AC, P, CY) are affected.
+
+
+SUI DATA 
+    Name: Subtract Immediate from Accumulator 
+    Description: The 8-bit immediate DATA is subtracted from the 8-bit contents of the accumulator, and the result is stored in the accumulator. 
+    Flags: All flags (S, Z, AC, P, CY) are affected.
+
+
+SBI DATA 
+    Name: Subtract Immediate from Accumulator with Borrow 
+    Description: The 8-bit immediate DATA and the Carry Flag (CY, acting as a borrow) are subtracted from the 8-bit contents of the accumulator. The result is stored in the accumulator. 
+    Flags: All flags (S, Z, AC, P, CY) are affected.
+
+
+INR DEST 
+    Name: Increment Register or Memory by 1 
+    Description: The 8-bit contents of the DEST register (A, B, C, D, E, H, L, M) are incremented by 1. If M is specified, the operation is performed on the memory location specified by the HL register pair. 
+    Flags: S, Z, AC, and P flags are affected. The Carry Flag (CY) is not affected.
+
+
+INX REG_PAIR 
+    Name: Increment Register Pair by 1 
+    Description: The 16-bit contents of the specified register pair (B, D, H, or SP) are incremented by 1. 
+    Flags: No flags are affected.
+
+
+DCR DEST 
+    Name: Decrement Register or Memory by 1 
+    Description: The 8-bit contents of the DEST register (A, B, C, D, E, H, L, M) are decremented by 1. If M is specified, the operation is performed on the memory location specified by the HL register pair. 
+    Flags: S, Z, AC, and P flags are affected. The Carry Flag (CY) is not affected.
+
+
+DCX REG_PAIR 
+    Name: Decrement Register Pair by 1 
+    Description: The 16-bit contents of the specified register pair (B, D, H, or SP) are decremented by 1. 
+    Flags: No flags are affected.
+
+
+DAA 
+    Name: Decimal Adjust Accumulator 
+    Description: Adjusts the 8-bit value in the accumulator to form two 4-bit Binary Coded Decimal (BCD) digits after an addition. * If the low-order 4 bits (bits 0-3) are greater than 9, or if the AC flag is 1, 6 is added to the accumulator. * If the high-order 4 bits (bits 4-7) are greater than 9, or if the CY flag is 1, 6 is added to the high-order bits. 
+    Flags: All flags (S, Z, AC, P, CY) are affected.
