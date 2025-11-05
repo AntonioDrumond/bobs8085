@@ -400,10 +400,15 @@ fn update (state: &mut State, message: Message) {
         Message::SelectFile(file) => state.selected_file = file,
         Message::OpenFile(file_path) => {
             if file_path.exists() {
-                state.editor_content = text_editor::Content::with_text(&fs::read_to_string(file_path.clone()).unwrap());
-                state.current_file = file_path;
-                state.selected_file = PathBuf::default();
-                state.interface = 0x0;
+                match &fs::read_to_string(file_path.clone()) {
+                    Ok(res) => {
+                        state.editor_content = text_editor::Content::with_text(res);
+                        state.current_file = file_path;
+                        state.selected_file = PathBuf::default();
+                        state.interface = 0x0;
+                    },
+                    Err(err) => eprintln!("{}", err),
+                }
             }
         },
     }
