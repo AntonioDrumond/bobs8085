@@ -2,3 +2,4 @@
 /target
 *.orig
 *.txt
+src/program.asm
