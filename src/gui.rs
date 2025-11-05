@@ -5,14 +5,12 @@ use bobs8085::{
 };
 
 use std::{
-    fs::File,
     env,
-
-    io::{
-        Write,
-        prelude::*,
+    io:: Write,
+    fs::{
+        self,
+        File,
     },
-
     path::{
         Path,
         PathBuf,
@@ -20,13 +18,11 @@ use std::{
 };
 
 use iced::{
-    Element, Fill, Alignment, Length,
-    Border, Color, Theme, Font, window, Settings,
+    window, Alignment, Border, Color, Element, Fill, Font, Length, Settings, Theme
 };
 
-#[allow(unused_imports, dead_code)]
 use iced::widget::{
-    Scrollable, Row, Column, Container,
+    Row, Column, Container,
     row, column, text, button,
     text_editor, scrollable, container,
     horizontal_space,
@@ -34,19 +30,21 @@ use iced::widget::{
 
 
 #[derive(Debug, Clone)]
-#[allow(unused_imports, dead_code)]
 enum Message {
     SetInterface(u8), // 0 -> Simulator 
                       // 1 -> Open file
                       // 2 -> Save file
                       // 3 -> Help
 
+    OpenFile(PathBuf),
+    SelectFile(PathBuf),
     NavigateTo(PathBuf),
+
     Assemble,
     RunAll,
     RunStep,
 
-    Edit(text_editor::Action),
+    EditText(text_editor::Action),
 
     MemoryPage(u8),
 
@@ -56,13 +54,17 @@ enum Message {
 }
 
 #[derive(Debug)]
-#[allow(unused_imports, dead_code)]
 struct State {
+
     interface: u8, // 0 -> simulator | 1 -> open file | 2 -> save file
-    sim: Simulator,
+
     cwd: PathBuf,
+    selected_file: PathBuf,
+    current_file: PathBuf,
+
     editor_content: text_editor::Content,
-    memory_page_number: u8,
+
+    sim: Simulator,
     current_memory_page: u8,
     step: bool,
     changes: Vec<Changes>,
@@ -71,11 +73,16 @@ struct State {
 impl Default for State {
     fn default() -> Self {
         let mut state = State { 
+
             interface: 0,
-            sim: Simulator::default(),
+
             cwd: env::current_dir().unwrap(),
+            selected_file: PathBuf::default(),
+            current_file: PathBuf::default(),
+
             editor_content: text_editor::Content::default(),
-            memory_page_number: 16,
+
+            sim: Simulator::default(),
             current_memory_page: 0,
             step: false,
             changes: vec![Changes::default(); 1],
@@ -132,6 +139,20 @@ macro_rules! add_border {
     }
 }
 
+#[macro_export]
+macro_rules! nav_button {
+    ($x:expr, $m:expr) => {
+        button($x)
+            .style(|_theme, _active| nav_button_style(Color::from_rgb(0.0, 0.0, 0.0)))
+            .on_press($m)
+    };
+    ($x:expr, $m:expr, $c:expr) => {
+        button($x)
+            .style(|_theme, _active| nav_button_style($c))
+            .on_press($m)
+    };
+}
+
 fn container_style() -> container::Style {
     container::Style {
         border: Border {
@@ -145,10 +166,23 @@ fn container_style() -> container::Style {
     }
 }
 
+fn nav_button_style(border_color: Color) -> button::Style {
+    button::Style {
+        border: Border {
+            color: border_color,
+            width: 2.0,
+            radius: 2.0.into(),
+        },
+        background: None,
+        text_color: Color::from_rgb(255.0, 255.0, 255.0), 
+        shadow: Default::default(),
+    }
+}
+
 fn editor_box (state: &State) -> Column<'_, Message> {
     column![
         text_editor(&state.editor_content)
-            .on_action(Message::Edit)
+            .on_action(Message::EditText)
             .height(Fill)
     ].spacing(8)
      .align_x(Alignment::Center)
@@ -348,7 +382,7 @@ fn update (state: &mut State, message: Message) {
             }
         },
         Message::MemoryPage(page) => state.current_memory_page = page,
-        Message::Edit(action) => state.editor_content.perform(action),
+        Message::EditText(action) => state.editor_content.perform(action),
         Message::Assemble => {
             state.step = false;
             let mut file = File::create("program.asm").unwrap();
@@ -359,14 +393,33 @@ fn update (state: &mut State, message: Message) {
             state.reset_changes();
         },
         Message::SetInterface(interface) => state.interface = interface,
-        Message::NavigateTo(path) => state.cwd = path,
+        Message::NavigateTo(path) => {
+            state.cwd = path;
+            state.selected_file = PathBuf::default();
+        }
+        Message::SelectFile(file) => state.selected_file = file,
+        Message::OpenFile(file_path) => {
+            if file_path.exists() {
+                state.editor_content = text_editor::Content::with_text(&fs::read_to_string(file_path.clone()).unwrap());
+                state.current_file = file_path;
+                state.selected_file = PathBuf::default();
+                state.interface = 0x0;
+            }
+        },
     }
 }
 
 fn default_interface (state: &State) -> Container<'_, Message> {
 
     // Section 1
+    let mut filename : &str = "";
+    match state.current_file.file_name() {
+        Some(name) => filename = name.to_str().unwrap(),
+        None => (),
+    }
+
     let section_1 = column![
+        text(format!("{}", filename)).align_x(Alignment::Center),
         editor_box(state), 
         button("Assemble").on_press(Message::Assemble),
     ].spacing(10);
@@ -431,7 +484,6 @@ fn default_interface (state: &State) -> Container<'_, Message> {
             .style(|_theme| container_style()),
     ].spacing(25);
 
-
     // Main
     let main = row![
         section_1
@@ -447,7 +499,7 @@ fn default_interface (state: &State) -> Container<'_, Message> {
     container(main).into()
 }
 
-fn openfile_interface(state: &State) -> Scrollable<'_, Message> {
+fn openfile_interface(state: &State) -> Container<'_, Message> {
 
     let cwd = Path::new(&state.cwd);
 
@@ -457,86 +509,125 @@ fn openfile_interface(state: &State) -> Scrollable<'_, Message> {
         None => parent = cwd,
     }
 
-    let mut cwd_box = column![
-        button(text(parent.to_str().unwrap().to_string()))
-            .on_press(Message::NavigateTo(parent.to_path_buf()))
-    ].spacing(10);
+    let header = column![
+        text(format!("Current Directory: {}", cwd.to_str().unwrap().to_string())).size(16), 
+        row![
+            button(text("UP"))
+                .on_press(Message::NavigateTo(parent.to_path_buf())),
+            button(text("Simulator"))
+                .on_press(Message::NavigateTo(env::current_dir().unwrap())),
+
+        ].spacing(10)
+    ].spacing(10).width(Fill);
+
+    let mut cwd_box = column![]
+        .spacing(8)
+        .width(Fill);
 
     if cwd.is_dir() {
-        for file in cwd.read_dir().expect("err") {
-            if let Ok(file) = file {
-                let entry = file.path().to_str().unwrap().to_string();
-                cwd_box = cwd_box.push(
-                    button(text(entry))
-                        .on_press(Message::NavigateTo(file.path()))
-                    );
+        for entry in cwd.read_dir().expect("The directory could not be read!") {
+            if let Ok(entry) = entry {
+                if entry.path().is_dir() {
+                    let dir = entry.path().to_str().unwrap().to_string();
+                    cwd_box = cwd_box.push(
+                        nav_button!(
+                            text(format!("{}", dir)).size(12),
+                            Message::NavigateTo(entry.path()),
+                            Color::from_rgb(255.0, 0.0, 0.0)
+                        )
+                    )
+                }
+            }
+        }
+        for entry in cwd.read_dir().expect("The directory could not be read!") {
+            if let Ok(entry) = entry {
+                if entry.path().is_file() {
+                    let dir = entry.path().to_str().unwrap().to_string();
+                    if entry.path() != state.selected_file {
+                        cwd_box = cwd_box.push(
+                            nav_button!(
+                                text(format!("{}", dir)).size(12),
+                                Message::SelectFile(entry.path()),
+                                Color::from_rgb(0.0, 0.0, 0.0)
+                            )
+                        )
+                    } else {
+                        cwd_box = cwd_box.push(
+                            nav_button!(
+                                text(format!("{}", dir)).size(12),
+                                Message::SelectFile(entry.path()),
+                                Color::from_rgb(0.0, 0.0, 255.0)
+                            )
+                        )
+                    }
+                }
             }
         }
     }
-    let main = column![text(cwd.to_str().unwrap().to_string()), cwd_box]
-        .spacing(10);
 
-    scrollable(container(main).width(Fill)).into()
+    let main = column![
+
+        header.height(Length::FillPortion(1)),
+        add_border!(scrollable(cwd_box), 10).height(Length::FillPortion(7)),
+
+        container(
+            button(text("Open"))
+                .on_press(Message::OpenFile(state.selected_file.clone()))
+        ).height(Length::FillPortion(1))
+    ].align_x(Alignment::Center)
+     .spacing(40);
+
+    add_border!(main, 10)
+        .width(Fill)
+        .into()
 }
 
-fn savefile_interface(state: &State) -> Container<'_, Message> {
+fn savefile_interface(_state: &State) -> Container<'_, Message> {
     let main = column![text("save")];
     container(main).into()
 }
 
-fn help_interface(state: &State)  -> Container<'_, Message> {
+fn help_interface(_state: &State)  -> Container<'_, Message> {
     let main = column![text("help")];
     container(main).into()
 }
 
 fn view (state: &State) -> Element<'_, Message> {
 
+    let header: Row<'_, Message>;
+    let main: Container<'_, Message>;
     match state.interface {
-        0x0 => {    // Simualtor
-            let header = row![
+        0x1 => {    // Open file
+            header = row![
+                button(text("Back")).on_press(Message::SetInterface(0x0)),
+            ].spacing(5);
+            main = openfile_interface(state);
+        },
+        0x2 => {    // Save file
+            header = row![
+                button(text("Back")).on_press(Message::SetInterface(0x0)),
+            ].spacing(5);
+            main = savefile_interface(state);
+        },
+        0x3 => {    // Help
+            header = row![
+                button(text("Back")).on_press(Message::SetInterface(0x0)),
+            ].spacing(5);
+            main = help_interface(state);
+        },
+        0x0 | _ => {    // Simualtor
+            header = row![
                 button(text("Open File")).on_press(Message::SetInterface(0x1)),
                 button(text("Save File")).on_press(Message::SetInterface(0x2)),
                 button(text("Help")).on_press(Message::SetInterface(0x3)),
             ].spacing(5);
-
-            column![
-                header,
-                default_interface(state)
-            ].padding(10).spacing(5).into()
-
+            main = default_interface(state);
         },
-        0x1 => {    // Open file
-            let header = row![
-                button(text("Back")).on_press(Message::SetInterface(0x0)),
-            ].spacing(5);
-
-            column![
-                header,
-                openfile_interface(state),
-            ].padding(10).spacing(5).into()
-        },
-        0x2 => {    // Save file
-            let header = row![
-                button(text("Back")).on_press(Message::SetInterface(0x0)),
-            ].spacing(5);
-
-            column![
-                header,
-                savefile_interface(state),
-            ].padding(10).spacing(5).into()
-        },
-        0x3 => {    // Help
-            let header = row![
-                button(text("Back")).on_press(Message::SetInterface(0x0)),
-            ].spacing(5);
-
-            column![
-                header,
-                help_interface(state)
-            ].padding(10).spacing(5).into()
-        },
-        _ => panic!("Unknow state interface!")
     }
+    column![
+        header,
+        main,
+    ].padding(10).spacing(5).into()
 }
 
 fn main () -> iced::Result {
