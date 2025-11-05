@@ -1,10 +1,7 @@
 use crate::gui_lib::{State, Message};
 
 use std::{
-    env,
-    path::{
-        Path,
-    }
+    env, fs, path::Path
 };
 
 use iced::{
@@ -12,7 +9,7 @@ use iced::{
 };
 
 use iced::widget::{
-    Row, Column, Container, scrollable,
+    Row, Column, Container, scrollable, Space,
     row, column, text, button,
     text_editor, container,
     horizontal_space,
@@ -483,18 +480,49 @@ fn savefile_interface(_state: &State) -> Container<'_, Message> {
 
 fn help_interface(state: &State)  -> Container<'_, Message> {
 
-    let main = column![];
-    match state.current_help_page {
-        1 => {
-            ()
-        },
-        2 => (),
-        3 => (),
-        4 => (),
-        0 | _ => (),
-    }
-
-    container(main).into()
+    let mut main = column![];
+    if state.simulator_path.exists() && state.simulator_path.is_dir() {
+        let mut path = state.simulator_path.clone();
+        path.push("man");
+        match state.current_help_page {
+            1 => {
+                path.push("branching.txt");
+                match fs::read_to_string(path) {
+                    Ok(content) => main = main.push(text(content)),
+                    Err(err) => eprintln!("{}", err),
+                }
+            },
+            2 => {
+                path.push("control.txt");
+                match fs::read_to_string(path) {
+                    Ok(content) => main = main.push(text(content)),
+                    Err(err) => eprintln!("{}", err),
+                }
+            },
+            3 => {
+                path.push("data_transfer.txt");
+                match fs::read_to_string(path) {
+                    Ok(content) => main = main.push(text(content)),
+                    Err(err) => eprintln!("{}", err),
+                }
+            },
+            4 => {
+                path.push("logical.txt");
+                match fs::read_to_string(path) {
+                    Ok(content) => main = main.push(text(content)),
+                    Err(err) => eprintln!("{}", err),
+                }
+            },
+            0 | _ => {
+                path.push("arithmetic.txt");
+                match fs::read_to_string(path) {
+                    Ok(content) => main = main.push(text(content)),
+                    Err(err) => eprintln!("{}", err),
+                }
+            },
+        };
+    };
+    container(scrollable(add_border!(main, 20))).into()
 }
 
 pub fn view (state: &State) -> Element<'_, Message> {
@@ -517,12 +545,13 @@ pub fn view (state: &State) -> Element<'_, Message> {
         0x3 => {    // Help
             header = add_border![row![
                 button(text("Back")).on_press(Message::SetInterface(0x0)),
+                Space::with_width(Length::Fill),
                 button("Arithmetic").on_press(Message::HelpPage(0)),
                 button("Branching").on_press(Message::HelpPage(1)),
                 button("Control").on_press(Message::HelpPage(2)),
                 button("Data Transfer").on_press(Message::HelpPage(3)),
                 button("Logical").on_press(Message::HelpPage(4)),
-            ].spacing(5), 10];
+            ].width(Fill).spacing(5), 10];
             main = help_interface(state);
         },
         0x0 | _ => {    // Simualtor

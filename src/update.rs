@@ -117,8 +117,6 @@ pub fn update(state: &mut State, message: Message) {
                 Err(err) => eprint!("{}", err),
             }
         },
-        Message::HelpPage(page) => {
-            state.current_help_page = page;  
-        },
+        Message::HelpPage(page) => state.current_help_page = page,
     }
 }

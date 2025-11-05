@@ -56,6 +56,7 @@ pub struct State {
     pub cwd: PathBuf,
     pub selected_file: PathBuf,
     pub current_file: PathBuf,
+    pub simulator_path: PathBuf,
 
     pub editor_content: text_editor::Content,
     pub assemble_error: bool,
@@ -68,9 +69,13 @@ pub struct State {
 
 impl Default for State {
     fn default() -> Self {
+        let mut sim_path = PathBuf::default();
         let mut cwd = PathBuf::default();
         match env::current_dir() {
-            Ok(path) => cwd = path,
+            Ok(path) => {
+                cwd = path.clone();
+                sim_path = path;
+            }
             Err(err) => eprintln!("{}", err),
         };
         if let Some(dir) = ProjectDirs::from("org", "bobs8085", "Simulator") {
@@ -79,22 +84,45 @@ impl Default for State {
                 Ok(status) => {
                     let mut last_dir = config_dir.clone();
                     last_dir.push("last_dir.txt");
+
+                    let mut simulator_path = config_dir.clone();
+                    simulator_path.push("simulator_path.txt");
+
                     if !status {
                         match fs::create_dir_all(config_dir.clone()) {
                             Err(err) => eprintln!("{}", err),
                             Ok(_) => {
-                                match File::create(last_dir.clone()) { 
+
+                                // Store the directory of the most recent opened file
+                                match File::create(last_dir) { 
+                                    Ok(mut file) => {
+                                        let _ = write![file, "{}", cwd.to_str().unwrap()];
+                                    },
+                                    Err(err) => eprintln!("{}", err),
+                                }; 
+
+                                // Store the directory of simulator             !!! There could be a problem if someone opens the simulator for the first time
+                                                                                // outside of the simulator folder (or does not have the config dir). 
+                                                                                // Hopefuly that does not happen :)
+                                match File::create(simulator_path) { 
                                     Ok(mut file) => {
                                         let _ = write![file, "{}", cwd.to_str().unwrap()];
                                     },
                                     Err(err) => eprintln!("{}", err),
                                 };
+
                             },
                         };
                     } else {
-                        match fs::read_to_string(last_dir.clone()) {
+                        match fs::read_to_string(last_dir) {
                             Ok(res) => {
                                 cwd = PathBuf::from(res); 
+                            },
+                            Err(err) => eprintln!("\n{}", err),
+                        };
+                        match fs::read_to_string(simulator_path) {
+                            Ok(res) => {
+                                sim_path = PathBuf::from(res); 
                             },
                             Err(err) => eprintln!("\n{}", err),
                         };
@@ -112,6 +140,7 @@ impl Default for State {
             interface: 0,
 
             cwd: cwd,
+            simulator_path: sim_path,
             selected_file: PathBuf::default(),
             current_file: PathBuf::default(),
 
