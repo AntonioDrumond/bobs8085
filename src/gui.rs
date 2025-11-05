@@ -16,19 +16,6 @@ use std::{
     }
 };
 
-
-use std::{
-    env, fs::{
-        self,
-        File,
-    }, 
-    io::Write,
-    path::{
-        Path,
-        PathBuf,
-    }
-};
-
 use iced::{
     window, Alignment, Border, Color, Element, Fill, Font, Length, Settings, Theme
 };
@@ -468,16 +455,14 @@ fn update(state: &mut State, message: Message) {
             let _ = match assemble(file_path, file_name) {
                 Ok(()) => {
                     state.assemble_error = false;
-                    state.sim = Simulator::bus_from_file("bin/out.bin");
+                    state.sim = Simulator::bus_from_file(&format!("bin/{}.bin", file_name));
                     state.reset_changes();
                 }
                 Err(err) => {
                     state.assemble_error = true;
                     state.logging_message = format!("{}", err);
                 }
-            }
-            state.sim = Simulator::bus_from_file(&format!("bin/{}.bin", file_name));
-            state.reset_changes();
+            };
         },
         Message::SetInterface(interface) => state.interface = interface,
         Message::NavigateTo(path) => {
