@@ -5,12 +5,11 @@ use bobs8085::{
 };
 
 use std::{
-    env,
-    io:: Write,
-    fs::{
+    env, fs::{
         self,
         File,
-    },
+    }, 
+    io::Write,
     path::{
         Path,
         PathBuf,
@@ -39,6 +38,7 @@ enum Message {
     OpenFile(PathBuf),
     SelectFile(PathBuf),
     NavigateTo(PathBuf),
+    SaveFile,
 
     Assemble,
     RunAll,
@@ -151,6 +151,17 @@ macro_rules! nav_button {
             .style(|_theme, _active| nav_button_style($c))
             .on_press($m)
     };
+}
+
+fn write_default_file (state: &mut State) {
+    match File::create("program.asm") {
+        Ok(mut file) => {
+            let text = state.editor_content.text();
+            let _ = write![file, "{}", text];
+        },
+        Err(err) => eprintln!("{}", err),
+    };
+    state.current_file = PathBuf::from("program.asm");
 }
 
 fn container_style() -> container::Style {
@@ -385,11 +396,15 @@ fn update (state: &mut State, message: Message) {
         Message::EditText(action) => state.editor_content.perform(action),
         Message::Assemble => {
             state.step = false;
-            let mut file = File::create("program.asm").unwrap();
-            let text = state.editor_content.text();
-            let _ = write![file, "{}", text];
-            let _ = assemble("program.asm", "out");
-            state.sim = Simulator::bus_from_file("bin/out.bin");
+            if !state.current_file.exists() {
+                write_default_file(state);
+            }
+            let file_path = state.current_file.to_str().unwrap();
+            let file_name = state.current_file.file_stem().unwrap().to_str().unwrap();
+
+            let _ = assemble(file_path, file_name);
+
+            state.sim = Simulator::bus_from_file(&format!("bin/{}.bin", file_name));
             state.reset_changes();
         },
         Message::SetInterface(interface) => state.interface = interface,
@@ -411,6 +426,18 @@ fn update (state: &mut State, message: Message) {
                 }
             }
         },
+        Message::SaveFile => {
+            if !state.current_file.exists() {
+                write_default_file(state);
+            }
+            match File::create(state.current_file.clone()) {
+                Ok(mut file) => {
+                    let text = state.editor_content.text();
+                    let _ = write![file, "{}", text];
+                },
+                Err(err) => eprint!("{}", err),
+            }
+        }
     }
 }
 
@@ -558,11 +585,8 @@ fn openfile_interface(state: &State) -> Container<'_, Message> {
                         )
                     } else {
                         cwd_box = cwd_box.push(
-                            nav_button!(
-                                text(format!("{}", dir)).size(12),
-                                Message::SelectFile(entry.path()),
-                                Color::from_rgb(0.0, 0.0, 255.0)
-                            )
+                            button(text(format!("{}", dir)).size(12))
+                                .on_press(Message::SelectFile(entry.path()))
                         )
                     }
                 }
