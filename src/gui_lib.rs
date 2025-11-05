@@ -5,10 +5,14 @@ use bobs8085::{
 
 use std::{
     env,
+    fs::{self, File},
+    io::Write,
     path::PathBuf,
 };
 
 use iced::widget::text_editor;
+
+use directories::ProjectDirs;
 
 
 #[derive(Debug, Clone)]
@@ -31,6 +35,12 @@ pub enum Message {
 
     MemoryPage(u8),
 
+    HelpPage(u8), // 0 -> Arithmetic
+                  // 1 -> Branching
+                  // 2 -> Control
+                  // 3 -> Data Transfer
+                  // 4 -> Logical
+
     ForwardStep,
     BackwardStep,
     StopStep,
@@ -40,6 +50,8 @@ pub enum Message {
 pub struct State {
 
     pub interface: u8, // 0 -> simulator | 1 -> open file | 2 -> save file
+    pub current_memory_page: u8,
+    pub current_help_page: u8,
 
     pub cwd: PathBuf,
     pub selected_file: PathBuf,
@@ -50,13 +62,47 @@ pub struct State {
     pub logging_message: String,
 
     pub sim: Simulator,
-    pub current_memory_page: u8,
     pub step: bool,
     pub changes: Vec<Changes>,
 }
 
 impl Default for State {
     fn default() -> Self {
+        let mut cwd = PathBuf::default();
+        match env::current_dir() {
+            Ok(path) => cwd = path,
+            Err(err) => eprintln!("{}", err),
+        };
+        if let Some(dir) = ProjectDirs::from("org", "bobs8085", "Simulator") {
+            let config_dir = dir.config_dir().to_path_buf();
+            match config_dir.try_exists() {
+                Ok(status) => {
+                    let mut last_dir = config_dir.clone();
+                    last_dir.push("last_dir.txt");
+                    if !status {
+                        match fs::create_dir_all(config_dir.clone()) {
+                            Err(err) => eprintln!("{}", err),
+                            Ok(_) => {
+                                match File::create(last_dir.clone()) { 
+                                    Ok(mut file) => {
+                                        let _ = write![file, "{}", cwd.to_str().unwrap()];
+                                    },
+                                    Err(err) => eprintln!("{}", err),
+                                };
+                            },
+                        };
+                    } else {
+                        match fs::read_to_string(last_dir.clone()) {
+                            Ok(res) => {
+                                cwd = PathBuf::from(res); 
+                            },
+                            Err(err) => eprintln!("\n{}", err),
+                        };
+                    }
+                }
+                Err(err) => eprintln!("{}", err),
+            };
+        }
         let mut state = State {
             sim: Simulator::default(),
             editor_content: text_editor::Content::default(),
@@ -65,11 +111,13 @@ impl Default for State {
 
             interface: 0,
 
-            cwd: env::current_dir().unwrap(),
+            cwd: cwd,
             selected_file: PathBuf::default(),
             current_file: PathBuf::default(),
 
             current_memory_page: 0,
+            current_help_page: 0,
+            
             step: false,
             changes: vec![Changes::default(); 1],
         };
@@ -82,5 +130,30 @@ impl State {
     pub fn reset_changes(&mut self) {
         self.changes = vec![Changes::default(); 1];
         self.changes[0].cpu.pc = 0xC000;
+    }
+
+    pub fn update_last_dir(&mut self) {
+        if self.cwd.is_dir() {
+            if let Some(dir) = ProjectDirs::from("org", "bobs8085", "Simulator") {
+                let config_dir = dir.config_dir().to_path_buf();
+                match config_dir.try_exists() {
+                    Ok(status) => {
+                        if status {
+                            let mut last_dir = config_dir.clone();
+                            last_dir.push("last_dir.txt");
+                            match File::create(last_dir.clone()) { 
+                                Ok(mut file) => {
+                                    let _ = write![file, "{}", self.cwd.to_str().unwrap()];
+                                },
+                                Err(err) => eprintln!("{}", err),
+                            }
+                        } else { 
+                            eprintln!("Could not update the last directory!");
+                        }
+                    },
+                    Err(err) => eprintln!("Could not update the last directory!\n{}", err),
+                };
+            }
+        }
     }
 }

@@ -9,11 +9,7 @@ use std::{
     fs::{
         self,
         File,
-    }, 
-    io::Write,
-    path::{
-        PathBuf,
-    }
+    }, io::Write, path::PathBuf
 };
 
 use iced::widget::{
@@ -103,6 +99,7 @@ pub fn update(state: &mut State, message: Message) {
                         state.current_file = file_path;
                         state.selected_file = PathBuf::default();
                         state.interface = 0x0;
+                        state.update_last_dir();
                     },
                     Err(err) => eprintln!("{}", err),
                 }
@@ -119,6 +116,9 @@ pub fn update(state: &mut State, message: Message) {
                 },
                 Err(err) => eprint!("{}", err),
             }
-        }
+        },
+        Message::HelpPage(page) => {
+            state.current_help_page = page;  
+        },
     }
 }

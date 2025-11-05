@@ -312,7 +312,7 @@ fn interrupts_box(state: &State) -> Container<'_, Message> {
 fn default_interface (state: &State) -> Container<'_, Message> {
 
     // Section 1
-    let mut filename : &str = "";
+    let mut filename : &str = "No file was selected";
     match state.current_file.file_name() {
         Some(name) => filename = name.to_str().unwrap(),
         None => (),
@@ -403,17 +403,14 @@ fn openfile_interface(state: &State) -> Container<'_, Message> {
 
     let cwd = Path::new(&state.cwd);
 
-    let parent : &Path;
-    match cwd.parent() {
-        Some(val) => parent = val,
-        None => parent = cwd,
-    }
+    let mut parent = cwd.to_path_buf();
+    parent.pop();
 
     let header = column![
         text(format!("Current Directory: {}", cwd.to_str().unwrap().to_string())).size(16), 
         row![
             button(text("UP"))
-                .on_press(Message::NavigateTo(parent.to_path_buf())),
+                .on_press(Message::NavigateTo(parent)),
             button(text("Simulator"))
                 .on_press(Message::NavigateTo(env::current_dir().unwrap())),
 
@@ -484,40 +481,56 @@ fn savefile_interface(_state: &State) -> Container<'_, Message> {
     container(main).into()
 }
 
-fn help_interface(_state: &State)  -> Container<'_, Message> {
-    let main = column![text("help")];
+fn help_interface(state: &State)  -> Container<'_, Message> {
+
+    let main = column![];
+    match state.current_help_page {
+        1 => {
+            ()
+        },
+        2 => (),
+        3 => (),
+        4 => (),
+        0 | _ => (),
+    }
+
     container(main).into()
 }
 
 pub fn view (state: &State) -> Element<'_, Message> {
 
-    let header: Row<'_, Message>;
+    let header: Container<'_, Message>;
     let main: Container<'_, Message>;
     match state.interface {
         0x1 => {    // Open file
-            header = row![
+            header = add_border![row![
                 button(text("Back")).on_press(Message::SetInterface(0x0)),
-            ].spacing(5);
+            ].spacing(5), 10].width(Fill);
             main = openfile_interface(state);
         },
         0x2 => {    // Save file
-            header = row![
+            header = add_border![row![
                 button(text("Back")).on_press(Message::SetInterface(0x0)),
-            ].spacing(5);
+            ].spacing(5), 10];
             main = savefile_interface(state);
         },
         0x3 => {    // Help
-            header = row![
+            header = add_border![row![
                 button(text("Back")).on_press(Message::SetInterface(0x0)),
-            ].spacing(5);
+                button("Arithmetic").on_press(Message::HelpPage(0)),
+                button("Branching").on_press(Message::HelpPage(1)),
+                button("Control").on_press(Message::HelpPage(2)),
+                button("Data Transfer").on_press(Message::HelpPage(3)),
+                button("Logical").on_press(Message::HelpPage(4)),
+            ].spacing(5), 10];
             main = help_interface(state);
         },
         0x0 | _ => {    // Simualtor
-            header = row![
+            header = add_border![row![
                 button(text("Open File")).on_press(Message::SetInterface(0x1)),
                 button(text("Save File")).on_press(Message::SetInterface(0x2)),
                 button(text("Help")).on_press(Message::SetInterface(0x3)),
-            ].spacing(5);
+            ].spacing(5), 10].width(Fill);
             main = default_interface(state);
         },
     }
