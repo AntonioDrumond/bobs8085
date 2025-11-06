@@ -69,6 +69,13 @@ pub fn update(state: &mut State, message: Message) {
             state.step = false;
             if !state.current_file.exists() {
                 write_default_file(state);
+            } else {
+                match File::create(state.current_file.clone()) {
+                    Ok(mut file) => {
+                        let _ = write![file, "{}", state.editor_content.text()];
+                    },
+                    Err(err) => eprintln!("{}", err),
+                }
             }
             let file_path = state.current_file.to_str().unwrap();
             let file_name = state.current_file.file_stem().unwrap().to_str().unwrap();

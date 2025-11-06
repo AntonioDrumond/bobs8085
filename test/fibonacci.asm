@@ -19,4 +19,3 @@ X:
     JNZ X
 
     HLT
-

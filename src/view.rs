@@ -473,11 +473,6 @@ fn openfile_interface(state: &State) -> Container<'_, Message> {
         .into()
 }
 
-fn savefile_interface(_state: &State) -> Container<'_, Message> {
-    let main = column![text("save")];
-    container(main).into()
-}
-
 fn help_interface(state: &State)  -> Container<'_, Message> {
 
     let mut main = column![];
@@ -536,13 +531,7 @@ pub fn view (state: &State) -> Element<'_, Message> {
             ].spacing(5), 10].width(Fill);
             main = openfile_interface(state);
         },
-        0x2 => {    // Save file
-            header = add_border![row![
-                button(text("Back")).on_press(Message::SetInterface(0x0)),
-            ].spacing(5), 10];
-            main = savefile_interface(state);
-        },
-        0x3 => {    // Help
+        0x2 => {    // Help
             header = add_border![row![
                 button(text("Back")).on_press(Message::SetInterface(0x0)),
                 Space::with_width(Length::Fill),
@@ -557,8 +546,8 @@ pub fn view (state: &State) -> Element<'_, Message> {
         0x0 | _ => {    // Simualtor
             header = add_border![row![
                 button(text("Open File")).on_press(Message::SetInterface(0x1)),
-                button(text("Save File")).on_press(Message::SetInterface(0x2)),
-                button(text("Help")).on_press(Message::SetInterface(0x3)),
+                button(text("Save File")).on_press(Message::SaveFile),
+                button(text("Help")).on_press(Message::SetInterface(0x2)),
             ].spacing(5), 10].width(Fill);
             main = default_interface(state);
         },

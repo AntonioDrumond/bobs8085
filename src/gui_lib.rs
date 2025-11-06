@@ -19,8 +19,7 @@ use directories::ProjectDirs;
 pub enum Message {
     SetInterface(u8), // 0 -> Simulator 
                       // 1 -> Open file
-                      // 2 -> Save file
-                      // 3 -> Help
+                      // 2 -> Help
 
     OpenFile(PathBuf),
     SelectFile(PathBuf),
@@ -49,7 +48,7 @@ pub enum Message {
 #[derive(Debug)]
 pub struct State {
 
-    pub interface: u8, // 0 -> simulator | 1 -> open file | 2 -> save file
+    pub interface: u8, // 0 -> simulator | 1 -> open file | 3 -> help page
     pub current_memory_page: u8,
     pub current_help_page: u8,
 
