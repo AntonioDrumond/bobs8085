@@ -5,20 +5,19 @@ use std::{
 };
 
 use iced::{
-    Alignment, Border, Color, Fill, Length, Element,
+    Alignment, Border, Color, Fill, FillPortion, Length, Element,
 };
 
 use iced::widget::{
     Row, Column, Container, scrollable, Space,
     row, column, text, button,
     text_editor, container,
-    horizontal_space,
 };
 
 #[macro_export]
 macro_rules! text_center {
     ($x:expr) => {
-        text($x).width(Fill).center()
+        text($x).width(FillPortion(1)).center()
     };
 }
 
@@ -116,25 +115,24 @@ fn logging_box(state: &State) -> Column<'_, Message> {
 
 fn memory_header() -> Row<'static, Message> {
     row![
-        horizontal_space(),
-        horizontal_space(),
-        text_center!("1"),
-        text_center!("2"),
-        text_center!("3"),
-        text_center!("4"),
-        text_center!("5"),
-        text_center!("6"),
-        text_center!("7"),
-        text_center!("8"),
-        text_center!("9"),
-        text_center!("A"),
-        text_center!("B"),
-        text_center!("C"),
-        text_center!("D"),
-        text_center!("E"),
-        text_center!("F"),
+        Space::with_width(Length::FillPortion(2)),
+        text(" 0 ").width(Length::FillPortion(1)),
+        text(" 1 ").width(Length::FillPortion(1)),
+        text(" 2 ").width(Length::FillPortion(1)),
+        text(" 3 ").width(Length::FillPortion(1)),
+        text(" 4 ").width(Length::FillPortion(1)),
+        text(" 5 ").width(Length::FillPortion(1)),
+        text(" 6 ").width(Length::FillPortion(1)),
+        text(" 7 ").width(Length::FillPortion(1)),
+        text(" 8 ").width(Length::FillPortion(1)),
+        text(" 9 ").width(Length::FillPortion(1)),
+        text(" A ").width(Length::FillPortion(1)),
+        text(" B ").width(Length::FillPortion(1)),
+        text(" C ").width(Length::FillPortion(1)),
+        text(" D ").width(Length::FillPortion(1)),
+        text(" E ").width(Length::FillPortion(1)),
+        text(" F ").width(Length::FillPortion(1)),
     ]
-    .spacing(13)
 }
 
 fn get_io_box(state: &State) -> Column<'_, Message> {
@@ -143,12 +141,13 @@ fn get_io_box(state: &State) -> Column<'_, Message> {
     let mut i: u16 = 0;
     while i < 0xFF {
         let mut io_row = row![text(format!("{:04X}: ", i))];
-        while ((i + 1) % 16) != 0 {
-            io_row = io_row.push(text_center!(format!("{:02X}", state.sim.io_get8(i as u8))).size(14));
-            i += 1;
+        let mut j = 0;
+        while j < 16 {
+            io_row = io_row.push(text_center!(format!("{:02X}", state.sim.io_get8((i+j) as u8))).size(14));
+            j += 1;
         }
         io_box = io_box.push(io_row.spacing(5));
-        i += 1;
+        i += 16;
     }
     io_box
 }
@@ -158,27 +157,30 @@ fn get_memory_pages(state: &State) -> Vec<Column<'_, Message>> {
     let mut mem_box = column![memory_header()];
 
     let mut i = 0xC000;
-    while i < 0xCFFF {
-        let mut mem_row = row![text(format!("{:04X}: ", i))];
-        while ((i + 1) % 16) != 0 {
-            let mut text = text(format!("{:02X}", state.sim.mem_get8(i)))
-                .width(Fill)
-                .size(14);
-            if i == (state.sim.get_pc().wrapping_sub(1)) {
-                text = text.color(Color::from_rgb(255.0, 0.0, 0.0));
-            } else if i == state.sim.get_sp() {
-                text = text.color(Color::from_rgb(0.0, 255.0, 0.0));
-            }
-            mem_row = mem_row.push(text);
-            i = i.wrapping_add(1);
-        }
-        mem_box = mem_box.push(mem_row.spacing(5));
+    while i < 0xD000 {
 
-        if ((i + 1) % 256) == 0 {
+        if (i > 0xC000) && (i % 256 == 0) {
             mem_pages.push(mem_box);
             mem_box = column![memory_header()];
         }
-        i = i.wrapping_add(1);
+
+        let mut mem_row = row![text(format!("{:04X}: ", i))];
+
+        let mut j = 0;
+        while j < 16 {
+            let mut text = text(format!("{:02X}", state.sim.mem_get8(i+j)))
+                .width(Fill)
+                .size(14);
+            if i+j == state.sim.get_pc() {
+                text = text.color(Color::from_rgb(255.0, 0.0, 0.0));
+            } else if i+j == state.sim.get_sp() {
+                text = text.color(Color::from_rgb(0.0, 255.0, 0.0));
+            }
+            mem_row = mem_row.push(text);
+            j += 1;
+        }
+        mem_box = mem_box.push(mem_row.spacing(5));
+        i = i.wrapping_add(16);
     }
     mem_pages
 }
