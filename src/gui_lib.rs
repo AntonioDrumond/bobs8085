@@ -77,7 +77,7 @@ impl Default for State {
             }
             Err(err) => eprintln!("{}", err),
         };
-        if let Some(dir) = ProjectDirs::from("org", "bobs8085", "Simulator") {
+        if let Some(dir) = ProjectDirs::from("org", "Simulator", "bobs8085") {
             let config_dir = dir.config_dir().to_path_buf();
             match config_dir.try_exists() {
                 Ok(status) => {
