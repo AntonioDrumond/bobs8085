@@ -1,7 +1,7 @@
 use crate::gui_lib::{State, Message};
 
 use std::{
-    env, fs, path::Path
+    fs, path::Path
 };
 
 use iced::{
@@ -13,6 +13,8 @@ use iced::widget::{
     row, column, text, button,
     text_editor, container,
 };
+
+use iced_font_awesome::fa_icon_solid;
 
 #[macro_export]
 macro_rules! text_center {
@@ -408,10 +410,19 @@ fn openfile_interface(state: &State) -> Container<'_, Message> {
     let header = column![
         text(format!("Current Directory: {}", cwd.to_str().unwrap().to_string())).size(16), 
         row![
-            button(text("UP"))
-                .on_press(Message::NavigateTo(parent)),
-            button(text("Simulator"))
-                .on_press(Message::NavigateTo(env::current_dir().unwrap())),
+            button(
+                fa_icon_solid("arrow-up")
+                .size(18.0)
+                .color(Color::from_rgb(0.0, 0.0, 0.0))
+            )
+            .on_press(Message::NavigateTo(parent)),
+
+            button(
+                fa_icon_solid("house")
+                .size(18.0)
+                .color(Color::from_rgb(0.0, 0.0, 0.0))
+            )
+            .on_press(Message::NavigateTo(state.simulator_path.clone())),
 
         ].spacing(10)
     ].spacing(10).width(Fill);
@@ -427,9 +438,12 @@ fn openfile_interface(state: &State) -> Container<'_, Message> {
                     let dir = entry.path().to_str().unwrap().to_string();
                     cwd_box = cwd_box.push(
                         nav_button!(
-                            text(format!("{}", dir)).size(12),
+                            row![
+                                fa_icon_solid("folder-open").size(14.0),
+                                text(format!("{}", dir)).size(14),
+                            ].spacing(5),
                             Message::NavigateTo(entry.path()),
-                            Color::from_rgb(255.0, 0.0, 0.0)
+                            Color::from_rgb(0.0, 0.0, 0.0)
                         )
                     )
                 }
@@ -442,14 +456,13 @@ fn openfile_interface(state: &State) -> Container<'_, Message> {
                     if entry.path() != state.selected_file {
                         cwd_box = cwd_box.push(
                             nav_button!(
-                                text(format!("{}", dir)).size(12),
-                                Message::SelectFile(entry.path()),
-                                Color::from_rgb(0.0, 0.0, 0.0)
+                                text(format!("{}", dir)).size(14),
+                                Message::SelectFile(entry.path())
                             )
                         )
                     } else {
                         cwd_box = cwd_box.push(
-                            button(text(format!("{}", dir)).size(12))
+                            button(text(format!("{}", dir)).size(14))
                                 .on_press(Message::SelectFile(entry.path()))
                         )
                     }
@@ -529,13 +542,21 @@ pub fn view (state: &State) -> Element<'_, Message> {
     match state.interface {
         0x1 => {    // Open file
             header = add_border![row![
-                button(text("Back")).on_press(Message::SetInterface(0x0)),
+                button(
+                    fa_icon_solid("arrow-left-long")
+                    .size(18.0)
+                    .color(Color::from_rgb(0.0, 0.0, 0.0))
+                ).on_press(Message::SetInterface(0x0)),
             ].spacing(5), 10].width(Fill);
             main = openfile_interface(state);
         },
         0x2 => {    // Help
             header = add_border![row![
-                button(text("Back")).on_press(Message::SetInterface(0x0)),
+                button(
+                    fa_icon_solid("arrow-left-long")
+                    .size(18.0)
+                    .color(Color::from_rgb(0.0, 0.0, 0.0))
+                ).on_press(Message::SetInterface(0x0)),
                 Space::with_width(Length::Fill),
                 button("Arithmetic").on_press(Message::HelpPage(0)),
                 button("Branching").on_press(Message::HelpPage(1)),

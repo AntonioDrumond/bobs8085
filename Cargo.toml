@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 directories = "6.0.0"
 iced = { version = "0.13.1", features = [ "debug" ] }
+iced_font_awesome = "0.3.0"
 tokio = "1.47.1"
 
 # CLI Binary
