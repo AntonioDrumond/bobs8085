@@ -435,7 +435,7 @@ fn openfile_interface(state: &State) -> Container<'_, Message> {
         for entry in cwd.read_dir().expect("The directory could not be read!") {
             if let Ok(entry) = entry {
                 if entry.path().is_dir() {
-                    let dir = entry.path().to_str().unwrap().to_string();
+                    let dir = entry.file_name().to_str().unwrap().to_string();
                     cwd_box = cwd_box.push(
                         nav_button!(
                             row![
@@ -452,7 +452,7 @@ fn openfile_interface(state: &State) -> Container<'_, Message> {
         for entry in cwd.read_dir().expect("The directory could not be read!") {
             if let Ok(entry) = entry {
                 if entry.path().is_file() {
-                    let dir = entry.path().to_str().unwrap().to_string();
+                    let dir = entry.file_name().to_str().unwrap().to_string();
                     if entry.path() != state.selected_file {
                         cwd_box = cwd_box.push(
                             nav_button!(
