@@ -65,6 +65,7 @@ pub fn update(state: &mut State, message: Message) {
         }
         Message::MemoryPage(page) => state.current_memory_page = page,
         Message::EditText(action) => state.editor_content.perform(action),
+        Message::NewFileName(content) => state.explorer_content = content,
         Message::Assemble => {
             state.step = false;
             if !state.current_file.exists() {
@@ -124,6 +125,19 @@ pub fn update(state: &mut State, message: Message) {
                 Err(err) => eprint!("{}", err),
             }
         },
+        Message::CreateNewFile => {
+            if state.explorer_content != "" {
+                let mut file_name = state.cwd.clone();
+                file_name.push(state.explorer_content.clone());
+                if !file_name.exists() {
+                    match File::create(file_name) {
+                        Ok(_) => (),
+                        Err(err) => eprintln!("{}", err),
+                    }
+                }
+                state.explorer_content = "".to_string();
+            }
+        }
         Message::HelpPage(page) => state.current_help_page = page,
     }
 }

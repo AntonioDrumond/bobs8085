@@ -21,6 +21,7 @@ pub enum Message {
                       // 1 -> Open file
                       // 2 -> Help
 
+    CreateNewFile,
     OpenFile(PathBuf),
     SelectFile(PathBuf),
     NavigateTo(PathBuf),
@@ -30,6 +31,7 @@ pub enum Message {
     RunAll,
     RunStep,
 
+    NewFileName(String),
     EditText(text_editor::Action),
 
     MemoryPage(u8),
@@ -57,6 +59,7 @@ pub struct State {
     pub current_file: PathBuf,
     pub simulator_path: PathBuf,
 
+    pub explorer_content: String,
     pub editor_content: text_editor::Content,
     pub assemble_error: bool,
     pub logging_message: String,
@@ -132,6 +135,8 @@ impl Default for State {
         }
         let mut state = State {
             sim: Simulator::default(),
+
+            explorer_content: String::default(),
             editor_content: text_editor::Content::default(),
             assemble_error: false,
             logging_message: String::new(),
@@ -162,7 +167,7 @@ impl State {
 
     pub fn update_last_dir(&mut self) {
         if self.cwd.is_dir() {
-            if let Some(dir) = ProjectDirs::from("org", "bobs8085", "Simulator") {
+            if let Some(dir) = ProjectDirs::from("org", "Simulator", "bobs8085") {
                 let config_dir = dir.config_dir().to_path_buf();
                 match config_dir.try_exists() {
                     Ok(status) => {

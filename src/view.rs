@@ -11,7 +11,7 @@ use iced::{
 use iced::widget::{
     Row, Column, Container, scrollable, Space,
     row, column, text, button,
-    text_editor, container,
+    text_editor, text_input, container,
 };
 
 use iced_font_awesome::fa_icon_solid;
@@ -159,7 +159,7 @@ fn get_memory_pages(state: &State) -> Vec<Column<'_, Message>> {
     let mut mem_box = column![memory_header()];
 
     let mut i = 0xC000;
-    while i < 0xD000 {
+    while i <= 0xD000 {
 
         if (i > 0xC000) && (i % 256 == 0) {
             mem_pages.push(mem_box);
@@ -424,6 +424,13 @@ fn openfile_interface(state: &State) -> Container<'_, Message> {
             )
             .on_press(Message::NavigateTo(state.simulator_path.clone())),
 
+            Space::with_width(Fill),
+            Space::with_width(Fill),
+            text_input("New file name", &state.explorer_content)
+                .on_input(Message::NewFileName),
+            button(fa_icon_solid("square-plus").color(Color::from_rgb(0.0, 0.0, 0.0)))
+                .on_press(Message::CreateNewFile),
+
         ].spacing(10)
     ].spacing(10).width(Fill);
 
@@ -502,7 +509,7 @@ fn openfile_interface(state: &State) -> Container<'_, Message> {
         add_border!(scrollable(cwd_box), 10).height(Length::FillPortion(10)),
 
         container(
-            button(text("Open"))
+            button(text("Open").size(20))
                 .on_press(Message::OpenFile(state.selected_file.clone()))
         ).height(Length::FillPortion(1))
     ].align_x(Alignment::Center)
