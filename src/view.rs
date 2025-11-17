@@ -408,7 +408,7 @@ fn openfile_interface(state: &State) -> Container<'_, Message> {
     parent.pop();
 
     let header = column![
-        text(format!("Current Directory: {}", cwd.to_str().unwrap().to_string())).size(16), 
+        text(format!("Current Directory: {}", cwd.to_str().unwrap().to_string())).size(20), 
         row![
             button(
                 fa_icon_solid("arrow-up")
@@ -432,39 +432,64 @@ fn openfile_interface(state: &State) -> Container<'_, Message> {
         .width(Fill);
 
     if cwd.is_dir() {
+
+        let mut dir_row : Row<'_, Message> = row![];
+        let mut n = 0;
+        let max_rows = 4;
+
         for entry in cwd.read_dir().expect("The directory could not be read!") {
             if let Ok(entry) = entry {
                 if entry.path().is_dir() {
-                    let dir = entry.file_name().to_str().unwrap().to_string();
-                    cwd_box = cwd_box.push(
+                    let mut dir = entry.file_name().to_str().unwrap().to_string();
+                    if dir.len() > 30 {
+                        dir = dir[0..30].to_string();
+                        dir.push_str("...");
+                    }
+                    dir_row = dir_row.push(
                         nav_button!(
                             row![
-                                fa_icon_solid("folder-open").size(14.0),
-                                text(format!("{}", dir)).size(14),
+                                fa_icon_solid("folder-open").size(18.0),
+                                text(format!("{}", dir)).size(18),
                             ].spacing(5),
                             Message::NavigateTo(entry.path()),
                             Color::from_rgb(0.0, 0.0, 0.0)
                         )
-                    )
+                    );
+                    n += 1;
+                    if n >= max_rows {
+                        cwd_box = cwd_box.push(dir_row.spacing(15));
+                        dir_row = row![];
+                        n = 0;
+                    }
                 }
             }
         }
         for entry in cwd.read_dir().expect("The directory could not be read!") {
             if let Ok(entry) = entry {
                 if entry.path().is_file() {
-                    let dir = entry.file_name().to_str().unwrap().to_string();
+                    let mut dir = entry.file_name().to_str().unwrap().to_string();
+                    if dir.len() > 30 {
+                        dir = dir[0..30].to_string();
+                        dir.push_str("...");
+                    }
                     if entry.path() != state.selected_file {
-                        cwd_box = cwd_box.push(
+                        dir_row = dir_row.push(
                             nav_button!(
-                                text(format!("{}", dir)).size(14),
+                                text(format!("{}", dir)).size(18),
                                 Message::SelectFile(entry.path())
                             )
-                        )
+                        );
                     } else {
-                        cwd_box = cwd_box.push(
-                            button(text(format!("{}", dir)).size(14))
+                        dir_row = dir_row.push(
+                            button(text(format!("{}", dir)).size(18))
                                 .on_press(Message::SelectFile(entry.path()))
-                        )
+                        );
+                    }
+                    n += 1;
+                    if n >= max_rows {
+                        cwd_box = cwd_box.push(dir_row.spacing(15));
+                        dir_row = row![];
+                        n = 0;
                     }
                 }
             }
@@ -474,7 +499,7 @@ fn openfile_interface(state: &State) -> Container<'_, Message> {
     let main = column![
 
         header.height(Length::FillPortion(1)),
-        add_border!(scrollable(cwd_box), 10).height(Length::FillPortion(7)),
+        add_border!(scrollable(cwd_box), 10).height(Length::FillPortion(10)),
 
         container(
             button(text("Open"))
@@ -557,12 +582,15 @@ pub fn view (state: &State) -> Element<'_, Message> {
                     .size(18.0)
                     .color(Color::from_rgb(0.0, 0.0, 0.0))
                 ).on_press(Message::SetInterface(0x0)),
+
                 Space::with_width(Length::Fill),
+
                 button("Arithmetic").on_press(Message::HelpPage(0)),
                 button("Branching").on_press(Message::HelpPage(1)),
                 button("Control").on_press(Message::HelpPage(2)),
                 button("Data Transfer").on_press(Message::HelpPage(3)),
                 button("Logical").on_press(Message::HelpPage(4)),
+
             ].width(Fill).spacing(5), 10];
             main = help_interface(state);
         },
