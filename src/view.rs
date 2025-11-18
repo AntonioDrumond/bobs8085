@@ -505,7 +505,7 @@ fn openfile_interface(state: &State) -> Container<'_, Message> {
 
     let main = column![
 
-        header.height(Length::FillPortion(1)),
+        header.height(Length::FillPortion(2)),
         add_border!(scrollable(cwd_box), 10).height(Length::FillPortion(10)),
 
         container(

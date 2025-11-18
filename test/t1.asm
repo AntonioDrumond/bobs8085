@@ -1,0 +1,3 @@
+MVI A,50H
+MVI B,50H
+HLT
