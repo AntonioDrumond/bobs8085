@@ -138,6 +138,10 @@ pub fn update(state: &mut State, message: Message) {
                 state.explorer_content = "".to_string();
             }
         }
-        Message::HelpPage(page) => state.current_help_page = page,
+        Message::HelpPage(page) => {
+            if state.current_help_page != page {
+                state.current_help_page = page;
+            }
+        }
     }
 }
